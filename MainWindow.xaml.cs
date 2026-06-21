@@ -211,8 +211,9 @@ namespace EqualizerPro
                 string toggleState = _isEqEnabled.ToString();
                 string darkModeState = _isDarkMode.ToString();
                 string accentColorHex = $"#{_targetAccent.A:X2}{_targetAccent.R:X2}{_targetAccent.G:X2}{_targetAccent.B:X2}";
+                string alwaysOnTopState = (AlwaysOnTopToggle?.IsChecked ?? false).ToString();
 
-                File.WriteAllLines(GetSettingsFilePath(), new string[] { currentPreset, toggleState, darkModeState, accentColorHex });
+                File.WriteAllLines(GetSettingsFilePath(), new string[] { currentPreset, toggleState, darkModeState, accentColorHex, alwaysOnTopState });
             }
             catch { }
         }
@@ -296,6 +297,18 @@ namespace EqualizerPro
                         catch { }
                     }
 
+                    // 5. Load Always on Top State
+                    if (lines.Length >= 5)
+                    {
+                        if (bool.TryParse(lines[4], out bool isAlwaysOnTop))
+                        {
+                            if (AlwaysOnTopToggle != null) AlwaysOnTopToggle.IsChecked = isAlwaysOnTop;
+
+                            this.Topmost = false;
+                            if (isAlwaysOnTop) this.Topmost = true;
+                        }
+                    }
+
                     SyncThemeVariablesToTarget();
                 }
             }
@@ -311,6 +324,23 @@ namespace EqualizerPro
             if (ColorsAreClose(c, Color.FromRgb(155, 89, 182))) return "Purple";
             if (ColorsAreClose(c, Color.FromRgb(0, 210, 211))) return "Cyan";
             return null;
+        }
+
+        // ==========================================
+        // UI Settings Toggles
+        // ==========================================
+        private void AlwaysOnTopToggle_Click(object sender, RoutedEventArgs e)
+        {
+            bool keepOnTop = AlwaysOnTopToggle.IsChecked ?? false;
+
+            // Force Windows to re-evaluate the Z-order by toggling it off then on
+            this.Topmost = false;
+
+            if (keepOnTop)
+            {
+                this.Topmost = true;
+                this.Activate(); // Bring it to the absolute front right now
+            }
         }
 
         // ==========================================
@@ -653,9 +683,6 @@ namespace EqualizerPro
             catch { }
         }
 
-        // ==========================================
-        // OS Glassmorphism (Acrylic Blur) Engine
-        // ==========================================
         [DllImport("user32.dll")]
         internal static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WindowCompositionAttributeData data);
 
@@ -686,9 +713,6 @@ namespace EqualizerPro
             catch { }
         }
 
-        // ==========================================
-        // Real-Time 60 FPS Visualizer & dB Meter Engine
-        // ==========================================
         private void VisualizerTimer_Tick(object sender, EventArgs e)
         {
             bool needsColorUpdate = false;
