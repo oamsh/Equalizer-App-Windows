@@ -1,0 +1,1176 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
+using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
+using System.Windows.Threading;
+using Windows.Media.Control;
+
+namespace EqualizerPro
+{
+    public partial class MainWindow : Window
+    {
+        private GlobalSystemMediaTransportControlsSessionManager _sessionManager;
+        private GlobalSystemMediaTransportControlsSession _currentSession;
+        private DispatcherTimer _playbackTimer;
+        private bool _isDraggingSeekbar = false;
+
+        // Equalizer Variables
+        private Slider[] _eqSliders;
+        private Dictionary<string, double[]> _eqPresets = new Dictionary<string, double[]>();
+        private bool _isUpdatingPreset = false;
+        private bool _isEqEnabled = true;
+
+        // Visualizer & DB Meter Variables
+        private DispatcherTimer _visualizerTimer;
+        private double[] _freqTargets = new double[10];
+        private double[] _freqCurrents = new double[10];
+        private double[] _spectrumTargets = new double[48];
+        private double[] _spectrumCurrents = new double[48];
+
+        private double _leftDbTarget = 0;
+        private double _leftDbCurrent = 0;
+        private double _rightDbTarget = 0;
+        private double _rightDbCurrent = 0;
+        private double _leftPeak = 0;
+        private double _rightPeak = 0;
+
+        private Random _rand = new Random();
+
+        private readonly string PlayIconData = "M2,2 L14,8 L2,14 Z";
+        private readonly string PauseIconData = "M2,2 L5,2 L5,14 L2,14 Z M11,2 L14,2 L14,14 L11,14 Z";
+
+        // Theme Variables
+        private bool _isDarkMode = true;
+        private Color _currentAccent = Color.FromRgb(92, 97, 255);
+        private Color _targetAccent = Color.FromRgb(92, 97, 255);
+        private bool _isUpdatingColorPicker = false;
+        private bool _isLoadingSettings = true;
+
+        private Color _curWindowBg = Color.FromArgb(153, 11, 14, 20);
+        private Color _tarWindowBg = Color.FromArgb(153, 11, 14, 20);
+        private Color _curPanelBg = Color.FromArgb(115, 11, 14, 20);
+        private Color _tarPanelBg = Color.FromArgb(115, 11, 14, 20);
+        private Color _curText = Colors.White;
+        private Color _tarText = Colors.White;
+        private Color _curMutedText = Color.FromRgb(169, 177, 214);
+        private Color _tarMutedText = Color.FromRgb(169, 177, 214);
+        private Color _curBorder = Color.FromArgb(38, 255, 255, 255);
+        private Color _tarBorder = Color.FromArgb(38, 255, 255, 255);
+        private Color _curOverlay = Color.FromArgb(26, 255, 255, 255);
+        private Color _tarOverlay = Color.FromArgb(26, 255, 255, 255);
+        private Color _curHover = Color.FromArgb(51, 255, 255, 255);
+        private Color _tarHover = Color.FromArgb(51, 255, 255, 255);
+
+        public MainWindow()
+        {
+            InitializeComponent();
+
+            _eqSliders = new Slider[] { Slider1, Slider2, Slider3, Slider4, Slider5, Slider6, Slider7, Slider8, Slider9, Slider10 };
+            InitializePresets();
+
+            _playbackTimer = new DispatcherTimer();
+            _playbackTimer.Interval = TimeSpan.FromMilliseconds(500);
+            _playbackTimer.Tick += PlaybackTimer_Tick;
+
+            _visualizerTimer = new DispatcherTimer();
+            _visualizerTimer.Interval = TimeSpan.FromMilliseconds(16);
+            _visualizerTimer.Tick += VisualizerTimer_Tick;
+
+            for (int i = 0; i < 10; i++) _freqCurrents[i] = 50;
+            for (int i = 0; i < 48; i++) _spectrumCurrents[i] = 2;
+
+            Loaded += MainWindow_Loaded;
+        }
+
+        private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            EnableGlassmorphismBlur();
+
+            LoadSettings();
+            PushColorsToUI();
+
+            LoadProfileImage();
+
+            try
+            {
+                VolumeSliderControl.Value = SystemVolumeManager.GetVolume();
+
+                _sessionManager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
+                if (_sessionManager != null)
+                {
+                    _sessionManager.CurrentSessionChanged += SessionManager_CurrentSessionChanged;
+                    UpdateCurrentSession(_sessionManager.GetCurrentSession());
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Init failed: " + ex.Message);
+            }
+
+            _visualizerTimer.Start();
+            _isLoadingSettings = false;
+        }
+
+        // ==========================================
+        // Sidebar Navigation
+        // ==========================================
+        private void SettingsBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (NavEqActive == null || NavSettingsActive == null) return;
+
+            NavEqActive.Visibility = Visibility.Collapsed;
+            NavEqBtn.Visibility = Visibility.Visible;
+
+            NavSettingsActive.Visibility = Visibility.Visible;
+            NavSettingsBtn.Visibility = Visibility.Collapsed;
+
+            EqContentPanel.Visibility = Visibility.Collapsed;
+            SettingsContentPanel.Visibility = Visibility.Visible;
+
+            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250));
+            SettingsContentPanel.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+        }
+
+        private void EqualizerBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (NavEqActive == null || NavSettingsActive == null) return;
+
+            NavEqActive.Visibility = Visibility.Visible;
+            NavEqBtn.Visibility = Visibility.Collapsed;
+
+            NavSettingsActive.Visibility = Visibility.Collapsed;
+            NavSettingsBtn.Visibility = Visibility.Visible;
+
+            SettingsContentPanel.Visibility = Visibility.Collapsed;
+            EqContentPanel.Visibility = Visibility.Visible;
+
+            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250));
+            EqContentPanel.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+        }
+
+        private void LoadProfileImage()
+        {
+            try
+            {
+                string exeFolder = AppDomain.CurrentDomain.BaseDirectory;
+                string imagePath = Path.Combine(exeFolder, "28db0a06-a5d2-4087-8c8d-19ca90566dc3.jpg");
+
+                if (File.Exists(imagePath))
+                {
+                    BitmapImage bitmap = new BitmapImage();
+                    bitmap.BeginInit();
+                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmap.UriSource = new Uri(imagePath, UriKind.Absolute);
+                    bitmap.EndInit();
+                    bitmap.Freeze();
+
+                    ProfileImageBrush.ImageSource = bitmap;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Image load failed: " + ex.Message);
+            }
+        }
+
+        // ==========================================
+        // App Lifecycle & Save/Load Settings
+        // ==========================================
+        protected override void OnClosed(EventArgs e)
+        {
+            SaveSettings();
+            _isEqEnabled = false;
+            ApplyEqToAudioStream();
+            base.OnClosed(e);
+        }
+
+        private string GetSettingsFilePath()
+        {
+            string appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            string folder = Path.Combine(appData, "EqualizerPro");
+            if (!Directory.Exists(folder))
+            {
+                Directory.CreateDirectory(folder);
+            }
+            return Path.Combine(folder, "settings.ini");
+        }
+
+        private void SaveSettings()
+        {
+            try
+            {
+                string currentPreset = (PresetSelector.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Custom";
+                string toggleState = _isEqEnabled.ToString();
+                string darkModeState = _isDarkMode.ToString();
+                string accentColorHex = $"#{_targetAccent.A:X2}{_targetAccent.R:X2}{_targetAccent.G:X2}{_targetAccent.B:X2}";
+
+                File.WriteAllLines(GetSettingsFilePath(), new string[] { currentPreset, toggleState, darkModeState, accentColorHex });
+            }
+            catch { }
+        }
+
+        private void LoadSettings()
+        {
+            try
+            {
+                string path = GetSettingsFilePath();
+                if (File.Exists(path))
+                {
+                    string[] lines = File.ReadAllLines(path);
+
+                    // 1. Load EQ Preset
+                    if (lines.Length >= 1)
+                    {
+                        string savedPreset = lines[0].Trim();
+                        foreach (ComboBoxItem item in PresetSelector.Items)
+                        {
+                            if (item.Content.ToString() == savedPreset)
+                            {
+                                PresetSelector.SelectedItem = item;
+                                break;
+                            }
+                        }
+                    }
+
+                    // 2. Load Toggle State
+                    if (lines.Length >= 2)
+                    {
+                        if (bool.TryParse(lines[1], out bool isEnabled))
+                        {
+                            _isEqEnabled = isEnabled;
+                            GlobalEqToggle.IsChecked = isEnabled;
+                            if (SlidersContainerGrid != null)
+                            {
+                                SlidersContainerGrid.Opacity = _isEqEnabled ? 1.0 : 0.4;
+                            }
+                        }
+                    }
+
+                    // 3. Load Dark/Light Mode
+                    if (lines.Length >= 3)
+                    {
+                        if (bool.TryParse(lines[2], out bool isDark))
+                        {
+                            _isDarkMode = isDark;
+                            ModeSwitchBtn.Content = _isDarkMode ? "☀" : "🌙";
+                            SetModeColors(_isDarkMode);
+                        }
+                    }
+
+                    // 4. Load Custom Color and Match Theme Dropdown
+                    if (lines.Length >= 4 && ThemeSelector != null)
+                    {
+                        try
+                        {
+                            _targetAccent = (Color)ColorConverter.ConvertFromString(lines[3].Trim());
+
+                            string themeName = GetThemeNameFromColor(_targetAccent);
+                            bool foundMatch = false;
+
+                            if (themeName != null)
+                            {
+                                foreach (ComboBoxItem item in ThemeSelector.Items)
+                                {
+                                    if (item.Content.ToString() == themeName)
+                                    {
+                                        ThemeSelector.SelectedItem = item;
+                                        foundMatch = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (!foundMatch)
+                            {
+                                ThemeSelector.SelectedIndex = -1;
+                            }
+                        }
+                        catch { }
+                    }
+
+                    SyncThemeVariablesToTarget();
+                }
+            }
+            catch { }
+        }
+
+        private string GetThemeNameFromColor(Color c)
+        {
+            if (ColorsAreClose(c, Color.FromRgb(92, 97, 255))) return "Blue (Default)";
+            if (ColorsAreClose(c, Color.FromRgb(255, 71, 87))) return "Red";
+            if (ColorsAreClose(c, Color.FromRgb(46, 204, 113))) return "Green";
+            if (ColorsAreClose(c, Color.FromRgb(255, 159, 67))) return "Orange";
+            if (ColorsAreClose(c, Color.FromRgb(155, 89, 182))) return "Purple";
+            if (ColorsAreClose(c, Color.FromRgb(0, 210, 211))) return "Cyan";
+            return null;
+        }
+
+        // ==========================================
+        // DSP Equalizer Engine
+        // ==========================================
+        private void InitializePresets()
+        {
+            _eqPresets.Add("Custom", new double[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
+            _eqPresets.Add("Acoustic", new double[] { 5, 5, 4, 1, 1, 1, 3, 4, 3, 2 });
+            _eqPresets.Add("Bass Boost", new double[] { 9, 7, 4, 2, 0, 0, 0, 0, 0, 0 });
+            _eqPresets.Add("Electronic", new double[] { 6, 5, 0, -2, -1, 2, 4, 6, 5, 3 });
+            _eqPresets.Add("Vocal", new double[] { -2, -1, 1, 4, 6, 6, 5, 2, 0, -1 });
+            _eqPresets.Add("Rock", new double[] { 6, 4, 2, -1, -2, -1, 2, 4, 5, 6 });
+            _eqPresets.Add("Dance", new double[] { 8, 6, 2, 0, -2, -2, 0, 2, 4, 6 });
+        }
+
+        private void GlobalEqToggle_Click(object sender, RoutedEventArgs e)
+        {
+            _isEqEnabled = GlobalEqToggle.IsChecked ?? false;
+            if (SlidersContainerGrid != null) SlidersContainerGrid.Opacity = _isEqEnabled ? 1.0 : 0.4;
+            ApplyEqToAudioStream();
+        }
+
+        private void PresetSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isUpdatingPreset || PresetSelector == null || _eqSliders == null) return;
+
+            var selected = PresetSelector.SelectedItem as ComboBoxItem;
+            if (selected == null) return;
+
+            string presetName = selected.Content.ToString();
+            if (_eqPresets.ContainsKey(presetName))
+            {
+                _isUpdatingPreset = true;
+                double[] values = _eqPresets[presetName];
+
+                for (int i = 0; i < 10; i++) _eqSliders[i].Value = values[i];
+
+                if (_isEqEnabled) ApplyEqToAudioStream();
+                _isUpdatingPreset = false;
+            }
+        }
+
+        private void EqSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (!_isUpdatingPreset && PresetSelector != null)
+            {
+                _isUpdatingPreset = true;
+                PresetSelector.SelectedIndex = 0;
+                if (_isEqEnabled) ApplyEqToAudioStream();
+                _isUpdatingPreset = false;
+            }
+        }
+
+        private void ApplyEqToAudioStream()
+        {
+            try
+            {
+                string apoPath = @"C:\Program Files\EqualizerAPO\config\config.txt";
+
+                if (File.Exists(apoPath))
+                {
+                    string eqCommand;
+
+                    if (_isEqEnabled)
+                    {
+                        eqCommand = $"GraphicEQ: 31 {_eqSliders[0].Value:0.0}; 62 {_eqSliders[1].Value:0.0}; 125 {_eqSliders[2].Value:0.0}; 250 {_eqSliders[3].Value:0.0}; 500 {_eqSliders[4].Value:0.0}; 1000 {_eqSliders[5].Value:0.0}; 2000 {_eqSliders[6].Value:0.0}; 4000 {_eqSliders[7].Value:0.0}; 8000 {_eqSliders[8].Value:0.0}; 16000 {_eqSliders[9].Value:0.0}";
+                    }
+                    else
+                    {
+                        eqCommand = "GraphicEQ: 31 0.0; 62 0.0; 125 0.0; 250 0.0; 500 0.0; 1000 0.0; 2000 0.0; 4000 0.0; 8000 0.0; 16000 0.0";
+                    }
+
+                    File.WriteAllText(apoPath, eqCommand);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Could not write to audio driver: " + ex.Message);
+            }
+        }
+
+        // ==========================================
+        // Wave Transition Engine
+        // ==========================================
+        private void TriggerWaveTransition(Point origin, Action themeChangeAction)
+        {
+            if (WindowBorder == null || ThemeTransitionOverlay == null) return;
+
+            var rtb = new RenderTargetBitmap((int)this.ActualWidth, (int)this.ActualHeight, 96, 96, PixelFormats.Pbgra32);
+            rtb.Render(WindowBorder);
+            ThemeTransitionOverlay.Source = rtb;
+            ThemeTransitionOverlay.Visibility = Visibility.Visible;
+
+            EllipseGeometry holeGeometry = new EllipseGeometry(origin, 0, 0);
+            RectangleGeometry fullScreen = new RectangleGeometry(new Rect(0, 0, this.ActualWidth, this.ActualHeight));
+            GeometryGroup clipGroup = new GeometryGroup { FillRule = FillRule.EvenOdd };
+            clipGroup.Children.Add(fullScreen);
+            clipGroup.Children.Add(holeGeometry);
+            ThemeTransitionOverlay.Clip = clipGroup;
+
+            themeChangeAction();
+
+            double maxRadius = Math.Max(this.ActualWidth, this.ActualHeight) * 1.5;
+            var anim = new DoubleAnimation(0, maxRadius, TimeSpan.FromMilliseconds(400))
+            {
+                EasingFunction = new SineEase { EasingMode = EasingMode.EaseIn }
+            };
+
+            anim.Completed += (s, a) => {
+                ThemeTransitionOverlay.Visibility = Visibility.Collapsed;
+                ThemeTransitionOverlay.Source = null;
+                ThemeTransitionOverlay.Clip = null;
+            };
+
+            holeGeometry.BeginAnimation(EllipseGeometry.RadiusXProperty, anim);
+            holeGeometry.BeginAnimation(EllipseGeometry.RadiusYProperty, anim);
+        }
+
+        // ==========================================
+        // Custom Color Picker & Theme Handlers
+        // ==========================================
+        private void CustomColorBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (ColorPickerPopup != null)
+            {
+                ColorPickerPopup.IsOpen = true;
+
+                _isUpdatingColorPicker = true;
+                if (RedSlider != null) RedSlider.Value = _targetAccent.R;
+                if (GreenSlider != null) GreenSlider.Value = _targetAccent.G;
+                if (BlueSlider != null) BlueSlider.Value = _targetAccent.B;
+
+                if (HexInputBox != null)
+                    HexInputBox.Text = $"#{_targetAccent.R:X2}{_targetAccent.G:X2}{_targetAccent.B:X2}";
+
+                UpdateColorPreview();
+                _isUpdatingColorPicker = false;
+            }
+        }
+
+        private void ColorSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (RedSlider == null || GreenSlider == null || BlueSlider == null || HexInputBox == null) return;
+
+            UpdateColorPreview();
+
+            if (!_isUpdatingColorPicker)
+            {
+                _isUpdatingColorPicker = true;
+                byte r = (byte)RedSlider.Value;
+                byte g = (byte)GreenSlider.Value;
+                byte b = (byte)BlueSlider.Value;
+                HexInputBox.Text = $"#{r:X2}{g:X2}{b:X2}";
+                _isUpdatingColorPicker = false;
+            }
+        }
+
+        private void HexInputBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (_isUpdatingColorPicker || !IsLoaded || RedSlider == null) return;
+
+            try
+            {
+                string hex = HexInputBox.Text.Trim();
+                if (!hex.StartsWith("#")) hex = "#" + hex;
+
+                if (hex.Length == 7 || hex.Length == 9)
+                {
+                    var color = (Color)ColorConverter.ConvertFromString(hex);
+
+                    _isUpdatingColorPicker = true;
+                    RedSlider.Value = color.R;
+                    GreenSlider.Value = color.G;
+                    BlueSlider.Value = color.B;
+                    UpdateColorPreview();
+                    _isUpdatingColorPicker = false;
+                }
+            }
+            catch { }
+        }
+
+        private void UpdateColorPreview()
+        {
+            if (ColorPreviewBox != null && RedSlider != null && GreenSlider != null && BlueSlider != null)
+            {
+                byte r = (byte)RedSlider.Value;
+                byte g = (byte)GreenSlider.Value;
+                byte b = (byte)BlueSlider.Value;
+                ColorPreviewBox.Background = new SolidColorBrush(Color.FromRgb(r, g, b));
+            }
+        }
+
+        private void ApplyCustomColor_Click(object sender, RoutedEventArgs e)
+        {
+            if (ColorPickerPopup != null) ColorPickerPopup.IsOpen = false;
+
+            byte r = (byte)(RedSlider?.Value ?? 92);
+            byte g = (byte)(GreenSlider?.Value ?? 97);
+            byte b = (byte)(BlueSlider?.Value ?? 255);
+
+            if (ThemeSelector != null)
+            {
+                ThemeSelector.SelectionChanged -= ThemeSelector_ThemeChanged;
+                ThemeSelector.SelectedIndex = -1;
+                ThemeSelector.SelectionChanged += ThemeSelector_ThemeChanged;
+            }
+
+            Point origin = CustomColorBtn.TransformToAncestor(this).Transform(new Point(CustomColorBtn.ActualWidth / 2, CustomColorBtn.ActualHeight / 2));
+
+            TriggerWaveTransition(origin, () =>
+            {
+                _targetAccent = Color.FromRgb(r, g, b);
+            });
+        }
+
+        private void SetModeColors(bool isDark)
+        {
+            if (isDark)
+            {
+                _tarWindowBg = Color.FromArgb(153, 11, 14, 20);
+                _tarPanelBg = Color.FromArgb(115, 11, 14, 20);
+                _tarText = Colors.White;
+                _tarMutedText = Color.FromRgb(169, 177, 214);
+                _tarBorder = Color.FromArgb(38, 255, 255, 255);
+                _tarOverlay = Color.FromArgb(26, 255, 255, 255);
+                _tarHover = Color.FromArgb(51, 255, 255, 255);
+            }
+            else
+            {
+                _tarWindowBg = Color.FromArgb(190, 240, 244, 248);
+                _tarPanelBg = Color.FromArgb(170, 255, 255, 255);
+                _tarText = Color.FromRgb(10, 15, 25);
+                _tarMutedText = Color.FromRgb(85, 95, 115);
+                _tarBorder = Color.FromArgb(50, 0, 0, 0);
+                _tarOverlay = Color.FromArgb(20, 0, 0, 0);
+                _tarHover = Color.FromArgb(30, 0, 0, 0);
+            }
+        }
+
+        private void SyncThemeVariablesToTarget()
+        {
+            _curWindowBg = _tarWindowBg;
+            _curPanelBg = _tarPanelBg;
+            _curText = _tarText;
+            _curMutedText = _tarMutedText;
+            _curBorder = _tarBorder;
+            _curOverlay = _tarOverlay;
+            _curHover = _tarHover;
+            _currentAccent = _targetAccent;
+        }
+
+        private void ModeSwitchBtn_Click(object sender, RoutedEventArgs e)
+        {
+            Point origin = ModeSwitchBtn.TransformToAncestor(this).Transform(new Point(ModeSwitchBtn.ActualWidth / 2, ModeSwitchBtn.ActualHeight / 2));
+
+            TriggerWaveTransition(origin, () =>
+            {
+                _isDarkMode = !_isDarkMode;
+                ModeSwitchBtn.Content = _isDarkMode ? "☀" : "🌙";
+                SetModeColors(_isDarkMode);
+            });
+        }
+
+        private void ThemeSelector_ThemeChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isLoadingSettings || ThemeSelector == null || !IsLoaded) return;
+            var selectedItem = (ComboBoxItem)ThemeSelector.SelectedItem;
+            if (selectedItem == null) return;
+
+            string themeName = selectedItem.Content.ToString();
+            Point origin = ThemeSelector.TransformToAncestor(this).Transform(new Point(ThemeSelector.ActualWidth / 2, ThemeSelector.ActualHeight / 2));
+
+            TriggerWaveTransition(origin, () =>
+            {
+                switch (themeName)
+                {
+                    case "Red": _targetAccent = Color.FromRgb(255, 71, 87); break;
+                    case "Green": _targetAccent = Color.FromRgb(46, 204, 113); break;
+                    case "Orange": _targetAccent = Color.FromRgb(255, 159, 67); break;
+                    case "Purple": _targetAccent = Color.FromRgb(155, 89, 182); break;
+                    case "Cyan": _targetAccent = Color.FromRgb(0, 210, 211); break;
+                    case "Blue (Default)":
+                    default: _targetAccent = Color.FromRgb(92, 97, 255); break;
+                }
+            });
+        }
+
+        private Color LerpColor(Color c1, Color c2, double amount)
+        {
+            byte a = (byte)(c1.A + (c2.A - c1.A) * amount);
+            byte r = (byte)(c1.R + (c2.R - c1.R) * amount);
+            byte g = (byte)(c1.G + (c2.G - c1.G) * amount);
+            byte b = (byte)(c1.B + (c2.B - c1.B) * amount);
+            return Color.FromArgb(a, r, g, b);
+        }
+
+        private bool ColorsAreClose(Color c1, Color c2)
+        {
+            return Math.Abs(c1.A - c2.A) < 2 && Math.Abs(c1.R - c2.R) < 2 && Math.Abs(c1.G - c2.G) < 2 && Math.Abs(c1.B - c2.B) < 2;
+        }
+
+        private void PushColorsToUI()
+        {
+            try
+            {
+                this.Resources["WindowBgBrush"] = new SolidColorBrush(_curWindowBg) { Opacity = 1 }.GetCurrentValueAsFrozen();
+                this.Resources["PanelBgBrush"] = new SolidColorBrush(_curPanelBg) { Opacity = 1 }.GetCurrentValueAsFrozen();
+                this.Resources["TextBrush"] = new SolidColorBrush(_curText) { Opacity = 1 }.GetCurrentValueAsFrozen();
+                this.Resources["MutedTextBrush"] = new SolidColorBrush(_curMutedText) { Opacity = 1 }.GetCurrentValueAsFrozen();
+                this.Resources["BorderBrush"] = new SolidColorBrush(_curBorder) { Opacity = 1 }.GetCurrentValueAsFrozen();
+                this.Resources["GlassOverlayBrush"] = new SolidColorBrush(_curOverlay) { Opacity = 1 }.GetCurrentValueAsFrozen();
+                this.Resources["HoverBrush"] = new SolidColorBrush(_curHover) { Opacity = 1 }.GetCurrentValueAsFrozen();
+
+                Color lightAccent = Color.FromArgb(255,
+                    (byte)Math.Min(255, _currentAccent.R + 60),
+                    (byte)Math.Min(255, _currentAccent.G + 60),
+                    (byte)Math.Min(255, _currentAccent.B + 70));
+                Color quarterAccent = Color.FromArgb(64, _currentAccent.R, _currentAccent.G, _currentAccent.B);
+
+                this.Resources["AccentColor"] = _currentAccent;
+                this.Resources["AccentColorLight"] = lightAccent;
+                this.Resources["AccentBrush"] = new SolidColorBrush(_currentAccent) { Opacity = 1 }.GetCurrentValueAsFrozen();
+                this.Resources["AccentBrushLight"] = new SolidColorBrush(lightAccent) { Opacity = 1 }.GetCurrentValueAsFrozen();
+
+                var spectrumGradient = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
+                spectrumGradient.GradientStops.Add(new GradientStop(lightAccent, 0.0));
+                spectrumGradient.GradientStops.Add(new GradientStop(_currentAccent, 0.5));
+                spectrumGradient.GradientStops.Add(new GradientStop(_curOverlay, 1.0));
+                spectrumGradient.Freeze();
+                this.Resources["SpectrumGradientBrush"] = spectrumGradient;
+
+                var freqFillGradient = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
+                freqFillGradient.GradientStops.Add(new GradientStop(lightAccent, 0.0));
+                freqFillGradient.GradientStops.Add(new GradientStop(quarterAccent, 0.6));
+                freqFillGradient.GradientStops.Add(new GradientStop(Color.FromArgb(0, _curWindowBg.R, _curWindowBg.G, _curWindowBg.B), 1.0));
+                freqFillGradient.Freeze();
+                this.Resources["FreqFillGradientBrush"] = freqFillGradient;
+            }
+            catch { }
+        }
+
+        // ==========================================
+        // OS Glassmorphism (Acrylic Blur) Engine
+        // ==========================================
+        [DllImport("user32.dll")]
+        internal static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WindowCompositionAttributeData data);
+
+        private void EnableGlassmorphismBlur()
+        {
+            try
+            {
+                var windowHelper = new WindowInteropHelper(this);
+                var accent = new AccentPolicy();
+
+                accent.AccentState = AccentState.ACCENT_ENABLE_ACRYLICBLURBEHIND;
+                accent.GradientColor = 0x00000000;
+
+                var accentStructSize = Marshal.SizeOf(accent);
+                var accentPtr = Marshal.AllocHGlobal(accentStructSize);
+                Marshal.StructureToPtr(accent, accentPtr, false);
+
+                var data = new WindowCompositionAttributeData
+                {
+                    Attribute = WindowCompositionAttribute.WCA_ACCENT_POLICY,
+                    SizeOfData = accentStructSize,
+                    Data = accentPtr
+                };
+
+                SetWindowCompositionAttribute(windowHelper.Handle, ref data);
+                Marshal.FreeHGlobal(accentPtr);
+            }
+            catch { }
+        }
+
+        // ==========================================
+        // Real-Time 60 FPS Visualizer & dB Meter Engine
+        // ==========================================
+        private void VisualizerTimer_Tick(object sender, EventArgs e)
+        {
+            bool needsColorUpdate = false;
+            if (!ColorsAreClose(_curWindowBg, _tarWindowBg) || !ColorsAreClose(_currentAccent, _targetAccent))
+            {
+                _curWindowBg = LerpColor(_curWindowBg, _tarWindowBg, 0.08);
+                _curPanelBg = LerpColor(_curPanelBg, _tarPanelBg, 0.08);
+                _curText = LerpColor(_curText, _tarText, 0.08);
+                _curMutedText = LerpColor(_curMutedText, _tarMutedText, 0.08);
+                _curBorder = LerpColor(_curBorder, _tarBorder, 0.08);
+                _curOverlay = LerpColor(_curOverlay, _tarOverlay, 0.08);
+                _curHover = LerpColor(_curHover, _tarHover, 0.08);
+                _currentAccent = LerpColor(_currentAccent, _targetAccent, 0.08);
+                needsColorUpdate = true;
+            }
+            else if (_curWindowBg != _tarWindowBg || _currentAccent != _targetAccent)
+            {
+                _curWindowBg = _tarWindowBg; _curPanelBg = _tarPanelBg; _curText = _tarText;
+                _curMutedText = _tarMutedText; _curBorder = _tarBorder; _curOverlay = _tarOverlay;
+                _curHover = _tarHover; _currentAccent = _targetAccent;
+                needsColorUpdate = true;
+            }
+            if (needsColorUpdate) PushColorsToUI();
+
+            float rawPeak = SystemVolumeManager.GetPeakValue();
+            double volumeFraction = VolumeSliderControl != null ? (VolumeSliderControl.Value / 100.0) : 1.0;
+            float currentPeak = (float)(rawPeak * volumeFraction);
+
+            bool isPlayingState = _currentSession?.GetPlaybackInfo()?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+            bool isActuallyPlayingAudio = isPlayingState && currentPeak > 0.001f;
+
+            for (int i = 0; i < 10; i++)
+            {
+                double sliderVal = _eqSliders != null ? _eqSliders[i].Value : 0;
+                double baseVisualY = 50 - (sliderVal * 2.5);
+
+                if (isActuallyPlayingAudio)
+                {
+                    if (_rand.NextDouble() < 0.2) _freqTargets[i] = baseVisualY + (_rand.Next(-15, 15) * currentPeak * 2.5);
+                }
+                else
+                {
+                    _freqTargets[i] = baseVisualY;
+                }
+                _freqCurrents[i] += (_freqTargets[i] - _freqCurrents[i]) * 0.10;
+            }
+            DrawFrequencyGraph();
+
+            if (SpectrumGrid != null)
+            {
+                for (int i = 0; i < 48; i++)
+                {
+                    if (isActuallyPlayingAudio)
+                    {
+                        if (_rand.NextDouble() < 0.3)
+                        {
+                            double bellCurve = Math.Sin((i / 47.0) * Math.PI);
+                            int maxHeight = (int)((bellCurve * 50 * currentPeak * 3) + (_rand.Next(10, 30) * currentPeak * 2));
+                            _spectrumTargets[i] = _rand.Next(5, maxHeight + 5);
+                        }
+                    }
+                    else
+                    {
+                        _spectrumTargets[i] = 2;
+                    }
+
+                    if (_spectrumTargets[i] > _spectrumCurrents[i])
+                    {
+                        _spectrumCurrents[i] += (_spectrumTargets[i] - _spectrumCurrents[i]) * 0.4;
+                    }
+                    else
+                    {
+                        _spectrumCurrents[i] -= 2.0;
+                        if (_spectrumCurrents[i] < _spectrumTargets[i]) _spectrumCurrents[i] = _spectrumTargets[i];
+                    }
+
+                    if (_spectrumCurrents[i] < 2) _spectrumCurrents[i] = 2;
+
+                    if (SpectrumGrid.Children.Count > i && SpectrumGrid.Children[i] is Border border)
+                    {
+                        border.Height = _spectrumCurrents[i];
+                    }
+                }
+            }
+
+            if (LeftVuTrack != null && RightVuTrack != null)
+            {
+                if (isActuallyPlayingAudio)
+                {
+                    _leftDbTarget = Math.Max(0, Math.Min(1, currentPeak + (_rand.NextDouble() * 0.02 - 0.01)));
+                    _rightDbTarget = Math.Max(0, Math.Min(1, currentPeak + (_rand.NextDouble() * 0.02 - 0.01)));
+                }
+                else
+                {
+                    _leftDbTarget = 0;
+                    _rightDbTarget = 0;
+                }
+
+                _leftDbCurrent += (_leftDbTarget - _leftDbCurrent) * 0.2;
+                _rightDbCurrent += (_rightDbTarget - _rightDbCurrent) * 0.2;
+
+                if (_leftDbCurrent > _leftPeak) _leftPeak = _leftDbCurrent;
+                else _leftPeak = Math.Max(0, _leftPeak - 0.01);
+
+                if (_rightDbCurrent > _rightPeak) _rightPeak = _rightDbCurrent;
+                else _rightPeak = Math.Max(0, _rightPeak - 0.01);
+
+                double trackHeight = LeftVuTrack.ActualHeight > 0 ? LeftVuTrack.ActualHeight : 80;
+
+                LeftVuFill.Height = Math.Max(0, _leftDbCurrent * trackHeight);
+                RightVuFill.Height = Math.Max(0, _rightDbCurrent * trackHeight);
+
+                LeftVuPeak.Margin = new Thickness(0, 0, 0, Math.Max(0, _leftPeak * trackHeight));
+                RightVuPeak.Margin = new Thickness(0, 0, 0, Math.Max(0, _rightPeak * trackHeight));
+
+                if (LeftDbText != null && RightDbText != null)
+                {
+                    double leftDbVal = _leftDbCurrent > 0.001 ? 20 * Math.Log10(_leftDbCurrent) : -60.0;
+                    double rightDbVal = _rightDbCurrent > 0.001 ? 20 * Math.Log10(_rightDbCurrent) : -60.0;
+
+                    LeftDbText.Text = leftDbVal <= -59.0 ? "-inf" : leftDbVal.ToString("0.0");
+                    RightDbText.Text = rightDbVal <= -59.0 ? "-inf" : rightDbVal.ToString("0.0");
+                }
+            }
+        }
+
+        private void DrawFrequencyGraph()
+        {
+            if (FreqResponseLine == null || FreqResponseFill == null) return;
+
+            Point[] points = new Point[10];
+            for (int i = 0; i < 10; i++) points[i] = new Point(i * 11.11, _freqCurrents[i]);
+
+            var geometry = CreateSmoothCurve(points);
+            FreqResponseLine.Data = geometry;
+
+            var fillGeometry = CreateSmoothCurve(points);
+            var figure = ((PathGeometry)fillGeometry).Figures[0];
+            figure.Segments.Add(new LineSegment(new Point(100, 100), false));
+            figure.Segments.Add(new LineSegment(new Point(0, 100), false));
+            figure.IsClosed = true;
+
+            FreqResponseFill.Data = fillGeometry;
+        }
+
+        private PathGeometry CreateSmoothCurve(Point[] points)
+        {
+            PathGeometry geometry = new PathGeometry();
+            if (points.Length < 2) return geometry;
+
+            PathFigure figure = new PathFigure { StartPoint = points[0], IsClosed = false };
+            PolyBezierSegment segment = new PolyBezierSegment();
+            double tension = 0.3;
+
+            for (int i = 0; i < points.Length - 1; i++)
+            {
+                Point p0 = i == 0 ? points[0] : points[i - 1];
+                Point p1 = points[i];
+                Point p2 = points[i + 1];
+                Point p3 = i + 2 == points.Length ? points[i + 1] : points[i + 2];
+
+                Point cp1 = new Point(p1.X + (p2.X - p0.X) * tension, p1.Y + (p2.Y - p0.Y) * tension);
+                Point cp2 = new Point(p2.X - (p3.X - p1.X) * tension, p2.Y - (p3.Y - p1.Y) * tension);
+
+                segment.Points.Add(cp1);
+                segment.Points.Add(cp2);
+                segment.Points.Add(p2);
+            }
+            figure.Segments.Add(segment);
+            geometry.Figures.Add(figure);
+            return geometry;
+        }
+
+        private void SessionManager_CurrentSessionChanged(GlobalSystemMediaTransportControlsSessionManager sender, CurrentSessionChangedEventArgs args) => UpdateCurrentSession(sender.GetCurrentSession());
+
+        private void UpdateCurrentSession(GlobalSystemMediaTransportControlsSession session)
+        {
+            if (_currentSession != null)
+            {
+                _currentSession.MediaPropertiesChanged -= CurrentSession_MediaPropertiesChanged;
+                _currentSession.PlaybackInfoChanged -= CurrentSession_PlaybackInfoChanged;
+                _currentSession.TimelinePropertiesChanged -= CurrentSession_TimelinePropertiesChanged;
+            }
+
+            _currentSession = session;
+
+            if (_currentSession != null)
+            {
+                _currentSession.MediaPropertiesChanged += CurrentSession_MediaPropertiesChanged;
+                _currentSession.PlaybackInfoChanged += CurrentSession_PlaybackInfoChanged;
+                _currentSession.TimelinePropertiesChanged += CurrentSession_TimelinePropertiesChanged;
+
+                UpdateMediaProperties();
+                UpdatePlaybackState();
+                UpdateTimeline();
+                _playbackTimer.Start();
+            }
+            else
+            {
+                _playbackTimer.Stop();
+                Dispatcher.Invoke(() => {
+                    TrackTitle.Text = "Unknown Track";
+                    TrackArtist.Text = "Unknown Artist";
+                    TrackImageBrush.ImageSource = null;
+                    TrackIcon.Visibility = Visibility.Visible;
+
+                    CurrentTimeText.Text = "0:00";
+                    TotalTimeText.Text = "0:00";
+                    SeekSlider.Value = 0;
+
+                    PlayPauseIcon.Data = Geometry.Parse(PlayIconData);
+                    PlayPauseIcon.Margin = new Thickness(3, 0, 0, 0);
+                });
+            }
+        }
+
+        private void CurrentSession_MediaPropertiesChanged(GlobalSystemMediaTransportControlsSession sender, MediaPropertiesChangedEventArgs args) => UpdateMediaProperties();
+        private void CurrentSession_PlaybackInfoChanged(GlobalSystemMediaTransportControlsSession sender, PlaybackInfoChangedEventArgs args) => UpdatePlaybackState();
+        private void CurrentSession_TimelinePropertiesChanged(GlobalSystemMediaTransportControlsSession sender, TimelinePropertiesChangedEventArgs args) => UpdateTimeline();
+        private void PlaybackTimer_Tick(object sender, EventArgs e) => UpdateTimeline();
+
+        private async void UpdateMediaProperties()
+        {
+            if (_currentSession == null) return;
+            try
+            {
+                var properties = await _currentSession.TryGetMediaPropertiesAsync();
+                if (properties != null)
+                {
+                    string title = string.IsNullOrEmpty(properties.Title) ? "Unknown Track" : properties.Title;
+                    string artist = string.IsNullOrEmpty(properties.Artist) ? "Unknown Artist" : properties.Artist;
+                    BitmapImage bitmapImage = null;
+
+                    if (properties.Thumbnail != null)
+                    {
+                        try
+                        {
+                            using (var stream = await properties.Thumbnail.OpenReadAsync())
+                            {
+                                var dotNetStream = stream.AsStreamForRead();
+                                bitmapImage = new BitmapImage();
+                                bitmapImage.BeginInit();
+                                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                                bitmapImage.StreamSource = dotNetStream;
+                                bitmapImage.EndInit();
+                                bitmapImage.Freeze();
+                            }
+                        }
+                        catch { }
+                    }
+
+                    Dispatcher.Invoke(() => {
+                        TrackTitle.Text = title;
+                        TrackArtist.Text = artist;
+                        if (bitmapImage != null)
+                        {
+                            TrackImageBrush.ImageSource = bitmapImage;
+                            TrackIcon.Visibility = Visibility.Collapsed;
+                        }
+                        else
+                        {
+                            TrackImageBrush.ImageSource = null;
+                            TrackIcon.Visibility = Visibility.Visible;
+                        }
+                    });
+                }
+            }
+            catch { }
+        }
+
+        private void UpdatePlaybackState()
+        {
+            if (_currentSession == null) return;
+            var playbackInfo = _currentSession.GetPlaybackInfo();
+            if (playbackInfo != null)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    if (playbackInfo.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
+                    {
+                        PlayPauseIcon.Data = Geometry.Parse(PauseIconData);
+                        PlayPauseIcon.Margin = new Thickness(0);
+                    }
+                    else
+                    {
+                        PlayPauseIcon.Data = Geometry.Parse(PlayIconData);
+                        PlayPauseIcon.Margin = new Thickness(3, 0, 0, 0);
+                    }
+                });
+            }
+        }
+
+        private void UpdateTimeline()
+        {
+            if (_currentSession == null || _isDraggingSeekbar) return;
+
+            var timeline = _currentSession.GetTimelineProperties();
+            var playbackInfo = _currentSession.GetPlaybackInfo();
+
+            if (timeline != null)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    TimeSpan currentPosition = timeline.Position;
+
+                    if (playbackInfo != null && playbackInfo.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
+                    {
+                        var elapsed = DateTimeOffset.Now - timeline.LastUpdatedTime;
+                        currentPosition = currentPosition.Add(elapsed);
+                    }
+
+                    if (currentPosition > timeline.EndTime) currentPosition = timeline.EndTime;
+                    if (currentPosition < TimeSpan.Zero) currentPosition = TimeSpan.Zero;
+
+                    SeekSlider.Maximum = timeline.EndTime.TotalSeconds;
+                    SeekSlider.Value = currentPosition.TotalSeconds;
+
+                    CurrentTimeText.Text = string.Format("{0}:{1:D2}", Math.Floor(currentPosition.TotalMinutes), currentPosition.Seconds);
+                    TotalTimeText.Text = string.Format("{0}:{1:D2}", Math.Floor(timeline.EndTime.TotalMinutes), timeline.EndTime.Seconds);
+                });
+            }
+        }
+
+        private async void PlayPause_Click(object sender, MouseButtonEventArgs e)
+        {
+            e.Handled = true;
+
+            if (PlayPauseBorder.RenderTransform is ScaleTransform scaleTransform)
+            {
+                var popAnim = new DoubleAnimation(0.8, 1.0, TimeSpan.FromMilliseconds(400))
+                {
+                    EasingFunction = new ElasticEase { Oscillations = 1, Springiness = 5, EasingMode = EasingMode.EaseOut }
+                };
+                scaleTransform.BeginAnimation(ScaleTransform.ScaleXProperty, popAnim);
+                scaleTransform.BeginAnimation(ScaleTransform.ScaleYProperty, popAnim);
+            }
+
+            if (_currentSession != null)
+            {
+                await _currentSession.TryTogglePlayPauseAsync();
+            }
+        }
+
+        private async void Previous_Click(object sender, RoutedEventArgs e)
+        {
+            e.Handled = true;
+            if (_currentSession != null) await _currentSession.TrySkipPreviousAsync();
+        }
+
+        private async void Next_Click(object sender, RoutedEventArgs e)
+        {
+            e.Handled = true;
+            if (_currentSession != null) await _currentSession.TrySkipNextAsync();
+        }
+
+        private void SeekSlider_DragStarted(object sender, DragStartedEventArgs e) => _isDraggingSeekbar = true;
+
+        private async void SeekSlider_DragCompleted(object sender, DragCompletedEventArgs e)
+        {
+            if (_currentSession != null)
+            {
+                var newPosition = TimeSpan.FromSeconds(SeekSlider.Value);
+                await _currentSession.TryChangePlaybackPositionAsync(newPosition.Ticks);
+            }
+            _isDraggingSeekbar = false;
+        }
+
+        private void SeekSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (_isDraggingSeekbar)
+            {
+                var tempPosition = TimeSpan.FromSeconds(SeekSlider.Value);
+                CurrentTimeText.Text = string.Format("{0}:{1:D2}", Math.Floor(tempPosition.TotalMinutes), tempPosition.Seconds);
+            }
+        }
+
+        private void VolumeSliderControl_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (IsLoaded) SystemVolumeManager.SetVolume(VolumeSliderControl.Value);
+        }
+
+        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ButtonState == MouseButtonState.Pressed) DragMove();
+        }
+
+        private void Minimize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+        private void Maximize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState == WindowState.Normal ? WindowState.Maximized : WindowState.Normal;
+        private void Close_Click(object sender, RoutedEventArgs e) => Close();
+
+        private void AboutBtn_Click(object sender, RoutedEventArgs e)
+        {
+            AboutOverlay.Visibility = Visibility.Visible;
+
+            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(200));
+            AboutOverlay.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+
+            var popIn = new DoubleAnimation(0.95, 1.0, TimeSpan.FromMilliseconds(300))
+            {
+                EasingFunction = new QuarticEase { EasingMode = EasingMode.EaseOut }
+            };
+            AboutScale.BeginAnimation(ScaleTransform.ScaleXProperty, popIn);
+            AboutScale.BeginAnimation(ScaleTransform.ScaleYProperty, popIn);
+        }
+
+        private void CloseAbout_Click(object sender, RoutedEventArgs e)
+        {
+            var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(150));
+            fadeOut.Completed += (s, ev) => AboutOverlay.Visibility = Visibility.Collapsed;
+            AboutOverlay.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+        }
+    }
+
+    public static class SystemVolumeManager
+    {
+        public static IAudioEndpointVolume GetMasterVolumeObject()
+        {
+            try
+            {
+                IMMDeviceEnumerator enumerator = (IMMDeviceEnumerator)new MMDeviceEnumerator();
+                enumerator.GetDefaultAudioEndpoint(0, 1, out IMMDevice device);
+                Guid endpointVolumeGuid = typeof(IAudioEndpointVolume).GUID;
+                device.Activate(endpointVolumeGuid, 23, IntPtr.Zero, out object interfacePointer);
+                return (IAudioEndpointVolume)interfacePointer;
+            }
+            catch { return null; }
+        }
+
+        public static float GetPeakValue()
+        {
+            try
+            {
+                IMMDeviceEnumerator enumerator = (IMMDeviceEnumerator)new MMDeviceEnumerator();
+                enumerator.GetDefaultAudioEndpoint(0, 1, out IMMDevice device);
+                Guid meterGuid = typeof(IAudioMeterInformation).GUID;
+                device.Activate(meterGuid, 23, IntPtr.Zero, out object interfacePointer);
+                IAudioMeterInformation meter = (IAudioMeterInformation)interfacePointer;
+
+                if (meter != null)
+                {
+                    meter.GetPeakValue(out float peak);
+                    return peak;
+                }
+            }
+            catch { }
+            return 0f;
+        }
+
+        public static void SetVolume(double volumeLevel)
+        {
+            var volume = GetMasterVolumeObject();
+            if (volume != null)
+            {
+                float level = (float)(volumeLevel / 100.0);
+                volume.SetMasterVolumeLevelScalar(level, Guid.Empty);
+            }
+        }
+
+        public static double GetVolume()
+        {
+            var volume = GetMasterVolumeObject();
+            if (volume != null)
+            {
+                volume.GetMasterVolumeLevelScalar(out float level);
+                return level * 100.0;
+            }
+            return 0;
+        }
+    }
+
+    public enum AccentState { ACCENT_DISABLED = 0, ACCENT_ENABLE_GRADIENT = 1, ACCENT_ENABLE_TRANSPARENTGRADIENT = 2, ACCENT_ENABLE_BLURBEHIND = 3, ACCENT_ENABLE_ACRYLICBLURBEHIND = 4, ACCENT_INVALID_STATE = 5 }
+    [StructLayout(LayoutKind.Sequential)] public struct AccentPolicy { public AccentState AccentState; public int AccentFlags; public uint GradientColor; public int AnimationId; }
+    [StructLayout(LayoutKind.Sequential)] public struct WindowCompositionAttributeData { public WindowCompositionAttribute Attribute; public IntPtr Data; public int SizeOfData; }
+    public enum WindowCompositionAttribute { WCA_ACCENT_POLICY = 19 }
+
+    [ComImport][Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")] public class MMDeviceEnumerator { }
+    [ComImport][Guid("A95664D2-9614-4F35-A746-DE8DB63617E6")][InterfaceType(ComInterfaceType.InterfaceIsIUnknown)] public interface IMMDeviceEnumerator { int EnumAudioEndpoints(int dataFlow, int stateMask, out IntPtr ppDevices); int GetDefaultAudioEndpoint(int dataFlow, int role, out IMMDevice ppEndpoint); }
+    [ComImport][Guid("D666063F-1587-4E43-81F1-B948E807363F")][InterfaceType(ComInterfaceType.InterfaceIsIUnknown)] public interface IMMDevice { int Activate([MarshalAs(UnmanagedType.LPStruct)] Guid iid, int dwClsCtx, IntPtr pActivationParams, [MarshalAs(UnmanagedType.IUnknown)] out object ppInterface); }
+    [ComImport][Guid("5CDF2C82-841E-4546-9722-0CF74078229A")][InterfaceType(ComInterfaceType.InterfaceIsIUnknown)] public interface IAudioEndpointVolume { int RegisterControlChangeNotify(IntPtr pNotify); int UnregisterControlChangeNotify(IntPtr pNotify); int GetChannelCount(out int pnChannelCount); int SetMasterVolumeLevel(float fLevelDB, Guid pguidEventContext); int SetMasterVolumeLevelScalar(float fLevel, Guid pguidEventContext); int GetMasterVolumeLevel(out float pfLevelDB); int GetMasterVolumeLevelScalar(out float pfLevel); }
+
+    [ComImport]
+    [Guid("C02216F6-8C67-4B5B-9D00-D008E73E0064")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    public interface IAudioMeterInformation { [PreserveSig] int GetPeakValue(out float pfPeak); [PreserveSig] int GetChannelsPeakValues(int u32ChannelCount, [MarshalAs(UnmanagedType.LPArray)] float[] afPeakValues); [PreserveSig] int QueryHardwareSupport(out int pdwHardwareSupportMask); }
+}
