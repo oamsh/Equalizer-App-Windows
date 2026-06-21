@@ -13,6 +13,14 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Windows.Media.Control;
 
+// --- AMBIGUITY FIXES ---
+// These explicitly tell the compiler to use the WPF versions instead of the Windows Forms versions
+using Point = System.Windows.Point;
+using Color = System.Windows.Media.Color;
+using Application = System.Windows.Application;
+using ColorConverter = System.Windows.Media.ColorConverter;
+// -----------------------
+
 namespace EqualizerPro
 {
     public partial class MainWindow : Window
@@ -21,6 +29,10 @@ namespace EqualizerPro
         private GlobalSystemMediaTransportControlsSession _currentSession;
         private DispatcherTimer _playbackTimer;
         private bool _isDraggingSeekbar = false;
+
+        // System Tray variables
+        private System.Windows.Forms.NotifyIcon _notifyIcon;
+        private bool _isForceClosing = false;
 
         // Equalizer Variables
         private Slider[] _eqSliders;
@@ -88,6 +100,7 @@ namespace EqualizerPro
             for (int i = 0; i < 48; i++) _spectrumCurrents[i] = 2;
 
             Loaded += MainWindow_Loaded;
+            InitializeSystemTray();
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -117,6 +130,84 @@ namespace EqualizerPro
 
             _visualizerTimer.Start();
             _isLoadingSettings = false;
+        }
+
+        // ==========================================
+        // System Tray & Window State Logic
+        // ==========================================
+        private void InitializeSystemTray()
+        {
+            _notifyIcon = new System.Windows.Forms.NotifyIcon();
+            _notifyIcon.Text = "Equalizer Pro";
+            _notifyIcon.Visible = false;
+
+            try
+            {
+                // Extracts the actual application icon from the compiled .exe
+                _notifyIcon.Icon = System.Drawing.Icon.ExtractAssociatedIcon(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            }
+            catch { }
+
+            _notifyIcon.DoubleClick += (s, args) => ShowFromTray();
+
+            var contextMenu = new System.Windows.Forms.ContextMenuStrip();
+            contextMenu.Items.Add("Open Equalizer Pro", null, (s, args) => ShowFromTray());
+            contextMenu.Items.Add("Exit", null, (s, args) => ForceExit());
+            _notifyIcon.ContextMenuStrip = contextMenu;
+        }
+
+        private void HideToTray()
+        {
+            this.Hide();
+            if (_notifyIcon != null) _notifyIcon.Visible = true;
+        }
+
+        private void ShowFromTray()
+        {
+            this.Show();
+            this.WindowState = WindowState.Normal;
+            this.Activate();
+            if (_notifyIcon != null) _notifyIcon.Visible = false;
+        }
+
+        private void ForceExit()
+        {
+            _isForceClosing = true;
+            if (_notifyIcon != null)
+            {
+                _notifyIcon.Visible = false;
+                _notifyIcon.Dispose();
+            }
+            Application.Current.Shutdown();
+        }
+
+        protected override void OnStateChanged(EventArgs e)
+        {
+            // Intercept normal minimize to taskbar if the setting is turned on
+            if (this.WindowState == WindowState.Minimized && MinimizeToTrayToggle != null && MinimizeToTrayToggle.IsChecked == true)
+            {
+                HideToTray();
+            }
+            base.OnStateChanged(e);
+        }
+
+        protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+        {
+            // Intercept normal close (Alt+F4 or X button) if setting is turned on
+            if (!_isForceClosing && MinimizeToTrayToggle != null && MinimizeToTrayToggle.IsChecked == true)
+            {
+                e.Cancel = true; // Stop it from closing
+                HideToTray();
+            }
+            else
+            {
+                // Truly closing now
+                SaveSettings();
+                _isEqEnabled = false;
+                ApplyEqToAudioStream();
+            }
+
+            base.OnClosing(e);
         }
 
         // ==========================================
@@ -182,16 +273,8 @@ namespace EqualizerPro
         }
 
         // ==========================================
-        // App Lifecycle & Save/Load Settings
+        // App Save/Load Settings
         // ==========================================
-        protected override void OnClosed(EventArgs e)
-        {
-            SaveSettings();
-            _isEqEnabled = false;
-            ApplyEqToAudioStream();
-            base.OnClosed(e);
-        }
-
         private string GetSettingsFilePath()
         {
             string appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
@@ -212,8 +295,9 @@ namespace EqualizerPro
                 string darkModeState = _isDarkMode.ToString();
                 string accentColorHex = $"#{_targetAccent.A:X2}{_targetAccent.R:X2}{_targetAccent.G:X2}{_targetAccent.B:X2}";
                 string alwaysOnTopState = (AlwaysOnTopToggle?.IsChecked ?? false).ToString();
+                string minTrayState = (MinimizeToTrayToggle?.IsChecked ?? true).ToString();
 
-                File.WriteAllLines(GetSettingsFilePath(), new string[] { currentPreset, toggleState, darkModeState, accentColorHex, alwaysOnTopState });
+                File.WriteAllLines(GetSettingsFilePath(), new string[] { currentPreset, toggleState, darkModeState, accentColorHex, alwaysOnTopState, minTrayState });
             }
             catch { }
         }
@@ -227,7 +311,6 @@ namespace EqualizerPro
                 {
                     string[] lines = File.ReadAllLines(path);
 
-                    // 1. Load EQ Preset
                     if (lines.Length >= 1)
                     {
                         string savedPreset = lines[0].Trim();
@@ -241,7 +324,6 @@ namespace EqualizerPro
                         }
                     }
 
-                    // 2. Load Toggle State
                     if (lines.Length >= 2)
                     {
                         if (bool.TryParse(lines[1], out bool isEnabled))
@@ -255,7 +337,6 @@ namespace EqualizerPro
                         }
                     }
 
-                    // 3. Load Dark/Light Mode
                     if (lines.Length >= 3)
                     {
                         if (bool.TryParse(lines[2], out bool isDark))
@@ -266,7 +347,6 @@ namespace EqualizerPro
                         }
                     }
 
-                    // 4. Load Custom Color and Match Theme Dropdown
                     if (lines.Length >= 4 && ThemeSelector != null)
                     {
                         try
@@ -297,7 +377,6 @@ namespace EqualizerPro
                         catch { }
                     }
 
-                    // 5. Load Always on Top State
                     if (lines.Length >= 5)
                     {
                         if (bool.TryParse(lines[4], out bool isAlwaysOnTop))
@@ -306,6 +385,14 @@ namespace EqualizerPro
 
                             this.Topmost = false;
                             if (isAlwaysOnTop) this.Topmost = true;
+                        }
+                    }
+
+                    if (lines.Length >= 6)
+                    {
+                        if (bool.TryParse(lines[5], out bool isMinTray))
+                        {
+                            if (MinimizeToTrayToggle != null) MinimizeToTrayToggle.IsChecked = isMinTray;
                         }
                     }
 
@@ -332,14 +419,12 @@ namespace EqualizerPro
         private void AlwaysOnTopToggle_Click(object sender, RoutedEventArgs e)
         {
             bool keepOnTop = AlwaysOnTopToggle.IsChecked ?? false;
-
-            // Force Windows to re-evaluate the Z-order by toggling it off then on
             this.Topmost = false;
 
             if (keepOnTop)
             {
                 this.Topmost = true;
-                this.Activate(); // Bring it to the absolute front right now
+                this.Activate();
             }
         }
 
@@ -1099,9 +1184,24 @@ namespace EqualizerPro
             if (e.ButtonState == MouseButtonState.Pressed) DragMove();
         }
 
-        private void Minimize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+        private void Minimize_Click(object sender, RoutedEventArgs e)
+        {
+            if (MinimizeToTrayToggle != null && MinimizeToTrayToggle.IsChecked == true)
+            {
+                HideToTray();
+            }
+            else
+            {
+                WindowState = WindowState.Minimized;
+            }
+        }
+
         private void Maximize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState == WindowState.Normal ? WindowState.Maximized : WindowState.Normal;
-        private void Close_Click(object sender, RoutedEventArgs e) => Close();
+
+        private void Close_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
+        }
 
         private void AboutBtn_Click(object sender, RoutedEventArgs e)
         {

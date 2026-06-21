@@ -2,6 +2,11 @@
 using System.Data;
 using System.Windows;
 
+// --- AMBIGUITY FIX ---
+// Explicitly tell the compiler to use the WPF Application class
+using Application = System.Windows.Application;
+// ---------------------
+
 namespace EqualizerPro
 {
     /// <summary>
@@ -10,5 +15,4 @@ namespace EqualizerPro
     public partial class App : Application
     {
     }
-
 }
