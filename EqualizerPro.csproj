@@ -9,5 +9,6 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="MahApps.Metro.IconPacks" Version="6.2.1" />
+		<PackageReference Include="NAudio" Version="2.3.0" />
 	</ItemGroup>
 </Project>

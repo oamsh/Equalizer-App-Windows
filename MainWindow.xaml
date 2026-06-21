@@ -162,7 +162,7 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="30"/>
                                     </Grid.ColumnDefinitions>
-                                    <ContentPresenter Content="{TemplateBinding SelectionBoxItem}" VerticalAlignment="Center" Margin="10,0"/>
+                                    <ContentPresenter Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}" VerticalAlignment="Center" Margin="10,0"/>
                                     <Path Grid.Column="1" Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.5" Data="M0,0 L4,4 L8,0" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,2,0,0"/>
                                     <ToggleButton Grid.ColumnSpan="2" Opacity="0" IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"/>
                                 </Grid>
@@ -338,6 +338,7 @@
                             </Grid.RowDefinitions>
 
                             <StackPanel Grid.Row="0" Margin="10,20,10,0">
+
                                 <Border x:Name="NavEqActive" Style="{StaticResource GlassOverlay}" Padding="15,12" Margin="0,0,0,5" Visibility="Visible">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                         <Path Stroke="{DynamicResource AccentBrush}" StrokeThickness="1.5" Stretch="Uniform" Width="14" Height="14" Data="M2,4 L2,14 M8,2 L8,14 M14,6 L14,14 M0,4 L4,4 M6,2 L10,2 M12,6 L16,6"/>
@@ -362,6 +363,19 @@
                                     <StackPanel Orientation="Horizontal">
                                         <Path Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.5" Stretch="Uniform" Width="14" Height="14" Data="M8,1 A7,7 0 1,1 7.9,1 M6,4 L11,8 L6,12 Z"/>
                                         <TextBlock Text="Playback" Margin="15,0,0,0" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+
+                                <Border x:Name="NavRecordActive" Style="{StaticResource GlassOverlay}" Padding="15,12" Margin="0,0,0,5" Visibility="Collapsed" MouseLeftButtonDown="RecordBtn_Click" Cursor="Hand">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Ellipse x:Name="RecordBlinkDot" Width="12" Height="12" Fill="#FF4444" Margin="1,0,0,0"/>
+                                        <TextBlock x:Name="RecordTimeText" Text="00:00" Foreground="{DynamicResource TextBrush}" Margin="16,0,0,0" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                                <Button x:Name="NavRecordBtn" Style="{StaticResource DarkButton}" BorderThickness="0" Padding="15,12" HorizontalContentAlignment="Left" Margin="0,0,0,5" Click="RecordBtn_Click">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Width="12" Height="12" Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.5" Margin="1,0,0,0"/>
+                                        <TextBlock Text="Record" Margin="16,0,0,0" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
 
@@ -919,22 +933,6 @@
                                                 </StackPanel>
                                             </Grid>
 
-                                            <Grid Margin="0,0,0,15">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <StackPanel VerticalAlignment="Center">
-                                                    <TextBlock Text="Target Output Device" Foreground="{DynamicResource TextBrush}" FontSize="14" FontWeight="SemiBold"/>
-                                                    <TextBlock Text="Force the engine to bind to a specific playback device." Foreground="{DynamicResource MutedTextBrush}" FontSize="11" Margin="0,2,0,0"/>
-                                                </StackPanel>
-                                                <ComboBox Grid.Column="1" Width="280" Height="30" SelectedIndex="0" Style="{StaticResource DarkComboBox}" VerticalAlignment="Center">
-                                                    <ComboBoxItem Content="Default System Device"/>
-                                                    <ComboBoxItem Content="Speakers (Realtek(R) Audio)"/>
-                                                    <ComboBoxItem Content="Headphones (Realtek(R) Audio)"/>
-                                                </ComboBox>
-                                            </Grid>
-
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
@@ -1014,9 +1012,7 @@
                                                     <TextBlock Text="Start with Windows" Foreground="{DynamicResource TextBrush}" FontSize="14" FontWeight="SemiBold"/>
                                                     <TextBlock Text="Automatically load your Equalizer profile when the PC turns on." Foreground="{DynamicResource MutedTextBrush}" FontSize="11" Margin="0,2,0,0"/>
                                                 </StackPanel>
-
                                                 <ToggleButton x:Name="StartWithWindowsToggle" Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="True" VerticalAlignment="Center" Click="StartWithWindowsToggle_Click"/>
-
                                             </Grid>
 
                                             <Grid Margin="0,0,0,15">

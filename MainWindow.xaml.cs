@@ -13,26 +13,46 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Windows.Media.Control;
 using Microsoft.Win32;
+using NAudio.Wave;
+using NAudio.CoreAudioApi; // Added to handle volume/visualizers cleanly
 
 // --- AMBIGUITY FIXES ---
 using Point = System.Windows.Point;
 using Color = System.Windows.Media.Color;
 using Application = System.Windows.Application;
 using ColorConverter = System.Windows.Media.ColorConverter;
+using MessageBox = System.Windows.MessageBox;
+using SaveFileDialog = Microsoft.Win32.SaveFileDialog;
 // -----------------------
 
 namespace EqualizerPro
 {
+    public class AudioDeviceInfo
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public override string ToString() => Name;
+    }
+
     public partial class MainWindow : Window
     {
         private GlobalSystemMediaTransportControlsSessionManager _sessionManager;
         private GlobalSystemMediaTransportControlsSession _currentSession;
         private DispatcherTimer _playbackTimer;
         private bool _isDraggingSeekbar = false;
+        private bool _isUpdatingVolumeUI = false;
 
         // System Tray variables
         private System.Windows.Forms.NotifyIcon _notifyIcon;
         private bool _isForceClosing = false;
+
+        // Audio Recording Variables
+        private WasapiLoopbackCapture _loopbackCapture;
+        private WaveFileWriter _waveWriter;
+        private string _tempRecordPath;
+        private DispatcherTimer _recordTimer;
+        private TimeSpan _recordDuration;
+        private bool _isRecording = false;
 
         // Equalizer Variables
         private Slider[] _eqSliders;
@@ -96,6 +116,11 @@ namespace EqualizerPro
             _visualizerTimer.Interval = TimeSpan.FromMilliseconds(16);
             _visualizerTimer.Tick += VisualizerTimer_Tick;
 
+            // Timer for the Recording feature
+            _recordTimer = new DispatcherTimer();
+            _recordTimer.Interval = TimeSpan.FromSeconds(1);
+            _recordTimer.Tick += RecordTimer_Tick;
+
             for (int i = 0; i < 10; i++) _freqCurrents[i] = 50;
             for (int i = 0; i < 48; i++) _spectrumCurrents[i] = 2;
 
@@ -114,7 +139,9 @@ namespace EqualizerPro
 
             try
             {
-                VolumeSliderControl.Value = SystemVolumeManager.GetVolume();
+                _isUpdatingVolumeUI = true;
+                if (VolumeSliderControl != null) VolumeSliderControl.Value = SystemVolumeManager.GetVolume();
+                _isUpdatingVolumeUI = false;
 
                 _sessionManager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
                 if (_sessionManager != null)
@@ -130,6 +157,122 @@ namespace EqualizerPro
 
             _visualizerTimer.Start();
             _isLoadingSettings = false;
+        }
+
+        // ==========================================
+        // Audio Recording Engine
+        // ==========================================
+        private void RecordBtn_Click(object sender, MouseButtonEventArgs e)
+        {
+            e.Handled = true;
+            if (!_isRecording) StartRecording();
+            else StopRecording();
+        }
+
+        private void RecordBtn_Click(object sender, RoutedEventArgs e)
+        {
+            e.Handled = true;
+            if (!_isRecording) StartRecording();
+            else StopRecording();
+        }
+
+        private void StartRecording()
+        {
+            try
+            {
+                _tempRecordPath = Path.Combine(Path.GetTempPath(), $"EqualizerPro_Rec_{Guid.NewGuid()}.wav");
+                _loopbackCapture = new WasapiLoopbackCapture();
+                _waveWriter = new WaveFileWriter(_tempRecordPath, _loopbackCapture.WaveFormat);
+
+                _loopbackCapture.DataAvailable += (s, a) =>
+                {
+                    _waveWriter.Write(a.Buffer, 0, a.BytesRecorded);
+                };
+
+                _loopbackCapture.RecordingStopped += LoopbackCapture_RecordingStopped;
+
+                _loopbackCapture.StartRecording();
+                _isRecording = true;
+
+                // UI Updates
+                NavRecordBtn.Visibility = Visibility.Collapsed;
+                NavRecordActive.Visibility = Visibility.Visible;
+                _recordDuration = TimeSpan.Zero;
+                RecordTimeText.Text = "00:00";
+                _recordTimer.Start();
+
+                // Blink Animation on the red dot
+                DoubleAnimation blink = new DoubleAnimation(1.0, 0.2, TimeSpan.FromMilliseconds(600));
+                blink.AutoReverse = true;
+                blink.RepeatBehavior = RepeatBehavior.Forever;
+                RecordBlinkDot.BeginAnimation(UIElement.OpacityProperty, blink);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Could not start recording: " + ex.Message);
+            }
+        }
+
+        private void StopRecording()
+        {
+            _isRecording = false;
+            _recordTimer.Stop();
+
+            // Calling StopRecording triggers the RecordingStopped event where we handle the file save
+            _loopbackCapture?.StopRecording();
+
+            // Reset UI
+            NavRecordActive.Visibility = Visibility.Collapsed;
+            NavRecordBtn.Visibility = Visibility.Visible;
+            RecordBlinkDot.BeginAnimation(UIElement.OpacityProperty, null);
+            RecordBlinkDot.Opacity = 1.0;
+        }
+
+        private void LoopbackCapture_RecordingStopped(object sender, StoppedEventArgs e)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                // Safely close the temporary file
+                _waveWriter?.Dispose();
+                _waveWriter = null;
+                _loopbackCapture?.Dispose();
+                _loopbackCapture = null;
+
+                // Open Save Dialog
+                SaveFileDialog saveFileDialog = new SaveFileDialog
+                {
+                    Filter = "WAV Audio File (*.wav)|*.wav",
+                    Title = "Save Recorded Audio",
+                    FileName = "EqualizerPro_Recording_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".wav"
+                };
+
+                if (saveFileDialog.ShowDialog() == true)
+                {
+                    try
+                    {
+                        if (File.Exists(_tempRecordPath))
+                        {
+                            File.Copy(_tempRecordPath, saveFileDialog.FileName, true);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Error saving file: " + ex.Message);
+                    }
+                }
+
+                // Delete the hidden temporary file
+                if (File.Exists(_tempRecordPath))
+                {
+                    try { File.Delete(_tempRecordPath); } catch { }
+                }
+            });
+        }
+
+        private void RecordTimer_Tick(object sender, EventArgs e)
+        {
+            _recordDuration = _recordDuration.Add(TimeSpan.FromSeconds(1));
+            RecordTimeText.Text = string.Format("{0:D2}:{1:D2}", _recordDuration.Minutes, _recordDuration.Seconds);
         }
 
         // ==========================================
@@ -262,10 +405,7 @@ namespace EqualizerPro
                     ProfileImageBrush.ImageSource = bitmap;
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Image load failed: " + ex.Message);
-            }
+            catch { }
         }
 
         // ==========================================
@@ -327,10 +467,7 @@ namespace EqualizerPro
                         {
                             _isEqEnabled = isEnabled;
                             GlobalEqToggle.IsChecked = isEnabled;
-                            if (SlidersContainerGrid != null)
-                            {
-                                SlidersContainerGrid.Opacity = _isEqEnabled ? 1.0 : 0.4;
-                            }
+                            if (SlidersContainerGrid != null) SlidersContainerGrid.Opacity = _isEqEnabled ? 1.0 : 0.4;
                         }
                     }
 
@@ -349,7 +486,6 @@ namespace EqualizerPro
                         try
                         {
                             _targetAccent = (Color)ColorConverter.ConvertFromString(lines[3].Trim());
-
                             string themeName = GetThemeNameFromColor(_targetAccent);
                             bool foundMatch = false;
 
@@ -365,11 +501,7 @@ namespace EqualizerPro
                                     }
                                 }
                             }
-
-                            if (!foundMatch)
-                            {
-                                ThemeSelector.SelectedIndex = -1;
-                            }
+                            if (!foundMatch) ThemeSelector.SelectedIndex = -1;
                         }
                         catch { }
                     }
@@ -463,10 +595,12 @@ namespace EqualizerPro
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Failed to update registry: " + ex.Message);
-            }
+            catch { }
+        }
+
+        private void VolumeSliderControl_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (!_isUpdatingVolumeUI && IsLoaded) SystemVolumeManager.SetVolume(VolumeSliderControl.Value);
         }
 
         // ==========================================
@@ -529,24 +663,21 @@ namespace EqualizerPro
 
                 if (File.Exists(apoPath))
                 {
-                    string eqCommand;
+                    string eqCommand = "";
 
                     if (_isEqEnabled)
                     {
-                        eqCommand = $"GraphicEQ: 31 {_eqSliders[0].Value:0.0}; 62 {_eqSliders[1].Value:0.0}; 125 {_eqSliders[2].Value:0.0}; 250 {_eqSliders[3].Value:0.0}; 500 {_eqSliders[4].Value:0.0}; 1000 {_eqSliders[5].Value:0.0}; 2000 {_eqSliders[6].Value:0.0}; 4000 {_eqSliders[7].Value:0.0}; 8000 {_eqSliders[8].Value:0.0}; 16000 {_eqSliders[9].Value:0.0}";
+                        eqCommand += $"GraphicEQ: 31 {_eqSliders[0].Value:0.0}; 62 {_eqSliders[1].Value:0.0}; 125 {_eqSliders[2].Value:0.0}; 250 {_eqSliders[3].Value:0.0}; 500 {_eqSliders[4].Value:0.0}; 1000 {_eqSliders[5].Value:0.0}; 2000 {_eqSliders[6].Value:0.0}; 4000 {_eqSliders[7].Value:0.0}; 8000 {_eqSliders[8].Value:0.0}; 16000 {_eqSliders[9].Value:0.0}";
                     }
                     else
                     {
-                        eqCommand = "GraphicEQ: 31 0.0; 62 0.0; 125 0.0; 250 0.0; 500 0.0; 1000 0.0; 2000 0.0; 4000 0.0; 8000 0.0; 16000 0.0";
+                        eqCommand += "GraphicEQ: 31 0.0; 62 0.0; 125 0.0; 250 0.0; 500 0.0; 1000 0.0; 2000 0.0; 4000 0.0; 8000 0.0; 16000 0.0";
                     }
 
                     File.WriteAllText(apoPath, eqCommand);
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Could not write to audio driver: " + ex.Message);
-            }
+            catch { }
         }
 
         // ==========================================
@@ -1215,11 +1346,6 @@ namespace EqualizerPro
             }
         }
 
-        private void VolumeSliderControl_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            if (IsLoaded) SystemVolumeManager.SetVolume(VolumeSliderControl.Value);
-        }
-
         private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (e.ButtonState == MouseButtonState.Pressed) DragMove();
@@ -1269,15 +1395,12 @@ namespace EqualizerPro
 
     public static class SystemVolumeManager
     {
-        public static IAudioEndpointVolume GetMasterVolumeObject()
+        public static MMDevice GetDefaultDevice()
         {
             try
             {
-                IMMDeviceEnumerator enumerator = (IMMDeviceEnumerator)new MMDeviceEnumerator();
-                enumerator.GetDefaultAudioEndpoint(0, 1, out IMMDevice device);
-                Guid endpointVolumeGuid = typeof(IAudioEndpointVolume).GUID;
-                device.Activate(endpointVolumeGuid, 23, IntPtr.Zero, out object interfacePointer);
-                return (IAudioEndpointVolume)interfacePointer;
+                var enumerator = new MMDeviceEnumerator();
+                return enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
             }
             catch { return null; }
         }
@@ -1286,16 +1409,10 @@ namespace EqualizerPro
         {
             try
             {
-                IMMDeviceEnumerator enumerator = (IMMDeviceEnumerator)new MMDeviceEnumerator();
-                enumerator.GetDefaultAudioEndpoint(0, 1, out IMMDevice device);
-                Guid meterGuid = typeof(IAudioMeterInformation).GUID;
-                device.Activate(meterGuid, 23, IntPtr.Zero, out object interfacePointer);
-                IAudioMeterInformation meter = (IAudioMeterInformation)interfacePointer;
-
-                if (meter != null)
+                var device = GetDefaultDevice();
+                if (device != null)
                 {
-                    meter.GetPeakValue(out float peak);
-                    return peak;
+                    return device.AudioMeterInformation.MasterPeakValue;
                 }
             }
             catch { }
@@ -1304,22 +1421,28 @@ namespace EqualizerPro
 
         public static void SetVolume(double volumeLevel)
         {
-            var volume = GetMasterVolumeObject();
-            if (volume != null)
+            try
             {
-                float level = (float)(volumeLevel / 100.0);
-                volume.SetMasterVolumeLevelScalar(level, Guid.Empty);
+                var device = GetDefaultDevice();
+                if (device != null)
+                {
+                    device.AudioEndpointVolume.MasterVolumeLevelScalar = (float)(volumeLevel / 100.0);
+                }
             }
+            catch { }
         }
 
         public static double GetVolume()
         {
-            var volume = GetMasterVolumeObject();
-            if (volume != null)
+            try
             {
-                volume.GetMasterVolumeLevelScalar(out float level);
-                return level * 100.0;
+                var device = GetDefaultDevice();
+                if (device != null)
+                {
+                    return device.AudioEndpointVolume.MasterVolumeLevelScalar * 100.0;
+                }
             }
+            catch { }
             return 0;
         }
     }
@@ -1328,14 +1451,4 @@ namespace EqualizerPro
     [StructLayout(LayoutKind.Sequential)] public struct AccentPolicy { public AccentState AccentState; public int AccentFlags; public uint GradientColor; public int AnimationId; }
     [StructLayout(LayoutKind.Sequential)] public struct WindowCompositionAttributeData { public WindowCompositionAttribute Attribute; public IntPtr Data; public int SizeOfData; }
     public enum WindowCompositionAttribute { WCA_ACCENT_POLICY = 19 }
-
-    [ComImport][Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")] public class MMDeviceEnumerator { }
-    [ComImport][Guid("A95664D2-9614-4F35-A746-DE8DB63617E6")][InterfaceType(ComInterfaceType.InterfaceIsIUnknown)] public interface IMMDeviceEnumerator { int EnumAudioEndpoints(int dataFlow, int stateMask, out IntPtr ppDevices); int GetDefaultAudioEndpoint(int dataFlow, int role, out IMMDevice ppEndpoint); }
-    [ComImport][Guid("D666063F-1587-4E43-81F1-B948E807363F")][InterfaceType(ComInterfaceType.InterfaceIsIUnknown)] public interface IMMDevice { int Activate([MarshalAs(UnmanagedType.LPStruct)] Guid iid, int dwClsCtx, IntPtr pActivationParams, [MarshalAs(UnmanagedType.IUnknown)] out object ppInterface); }
-    [ComImport][Guid("5CDF2C82-841E-4546-9722-0CF74078229A")][InterfaceType(ComInterfaceType.InterfaceIsIUnknown)] public interface IAudioEndpointVolume { int RegisterControlChangeNotify(IntPtr pNotify); int UnregisterControlChangeNotify(IntPtr pNotify); int GetChannelCount(out int pnChannelCount); int SetMasterVolumeLevel(float fLevelDB, Guid pguidEventContext); int SetMasterVolumeLevelScalar(float fLevel, Guid pguidEventContext); int GetMasterVolumeLevel(out float pfLevelDB); int GetMasterVolumeLevelScalar(out float pfLevel); }
-
-    [ComImport]
-    [Guid("C02216F6-8C67-4B5B-9D00-D008E73E0064")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    public interface IAudioMeterInformation { [PreserveSig] int GetPeakValue(out float pfPeak); [PreserveSig] int GetChannelsPeakValues(int u32ChannelCount, [MarshalAs(UnmanagedType.LPArray)] float[] afPeakValues); [PreserveSig] int QueryHardwareSupport(out int pdwHardwareSupportMask); }
 }
