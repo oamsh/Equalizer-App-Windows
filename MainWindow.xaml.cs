@@ -12,9 +12,9 @@ using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Windows.Media.Control;
+using Microsoft.Win32;
 
 // --- AMBIGUITY FIXES ---
-// These explicitly tell the compiler to use the WPF versions instead of the Windows Forms versions
 using Point = System.Windows.Point;
 using Color = System.Windows.Media.Color;
 using Application = System.Windows.Application;
@@ -143,7 +143,6 @@ namespace EqualizerPro
 
             try
             {
-                // Extracts the actual application icon from the compiled .exe
                 _notifyIcon.Icon = System.Drawing.Icon.ExtractAssociatedIcon(System.Reflection.Assembly.GetExecutingAssembly().Location);
             }
             catch { }
@@ -183,7 +182,6 @@ namespace EqualizerPro
 
         protected override void OnStateChanged(EventArgs e)
         {
-            // Intercept normal minimize to taskbar if the setting is turned on
             if (this.WindowState == WindowState.Minimized && MinimizeToTrayToggle != null && MinimizeToTrayToggle.IsChecked == true)
             {
                 HideToTray();
@@ -193,15 +191,13 @@ namespace EqualizerPro
 
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
-            // Intercept normal close (Alt+F4 or X button) if setting is turned on
             if (!_isForceClosing && MinimizeToTrayToggle != null && MinimizeToTrayToggle.IsChecked == true)
             {
-                e.Cancel = true; // Stop it from closing
+                e.Cancel = true;
                 HideToTray();
             }
             else
             {
-                // Truly closing now
                 SaveSettings();
                 _isEqEnabled = false;
                 ApplyEqToAudioStream();
@@ -296,8 +292,9 @@ namespace EqualizerPro
                 string accentColorHex = $"#{_targetAccent.A:X2}{_targetAccent.R:X2}{_targetAccent.G:X2}{_targetAccent.B:X2}";
                 string alwaysOnTopState = (AlwaysOnTopToggle?.IsChecked ?? false).ToString();
                 string minTrayState = (MinimizeToTrayToggle?.IsChecked ?? true).ToString();
+                string startWinState = (StartWithWindowsToggle?.IsChecked ?? false).ToString();
 
-                File.WriteAllLines(GetSettingsFilePath(), new string[] { currentPreset, toggleState, darkModeState, accentColorHex, alwaysOnTopState, minTrayState });
+                File.WriteAllLines(GetSettingsFilePath(), new string[] { currentPreset, toggleState, darkModeState, accentColorHex, alwaysOnTopState, minTrayState, startWinState });
             }
             catch { }
         }
@@ -382,7 +379,6 @@ namespace EqualizerPro
                         if (bool.TryParse(lines[4], out bool isAlwaysOnTop))
                         {
                             if (AlwaysOnTopToggle != null) AlwaysOnTopToggle.IsChecked = isAlwaysOnTop;
-
                             this.Topmost = false;
                             if (isAlwaysOnTop) this.Topmost = true;
                         }
@@ -393,6 +389,15 @@ namespace EqualizerPro
                         if (bool.TryParse(lines[5], out bool isMinTray))
                         {
                             if (MinimizeToTrayToggle != null) MinimizeToTrayToggle.IsChecked = isMinTray;
+                        }
+                    }
+
+                    if (lines.Length >= 7)
+                    {
+                        if (bool.TryParse(lines[6], out bool isStartWin))
+                        {
+                            if (StartWithWindowsToggle != null) StartWithWindowsToggle.IsChecked = isStartWin;
+                            SetStartWithWindows(isStartWin);
                         }
                     }
 
@@ -425,6 +430,42 @@ namespace EqualizerPro
             {
                 this.Topmost = true;
                 this.Activate();
+            }
+        }
+
+        private void StartWithWindowsToggle_Click(object sender, RoutedEventArgs e)
+        {
+            bool enableStart = StartWithWindowsToggle.IsChecked ?? false;
+            SetStartWithWindows(enableStart);
+        }
+
+        private void SetStartWithWindows(bool enable)
+        {
+            try
+            {
+                string runKey = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
+                using (RegistryKey key = Registry.CurrentUser.OpenSubKey(runKey, true))
+                {
+                    if (key != null)
+                    {
+                        if (enable)
+                        {
+                            string appPath = Environment.ProcessPath;
+                            if (!string.IsNullOrEmpty(appPath))
+                            {
+                                key.SetValue("EqualizerPro", appPath);
+                            }
+                        }
+                        else
+                        {
+                            key.DeleteValue("EqualizerPro", false);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failed to update registry: " + ex.Message);
             }
         }
 

@@ -1014,7 +1014,9 @@
                                                     <TextBlock Text="Start with Windows" Foreground="{DynamicResource TextBrush}" FontSize="14" FontWeight="SemiBold"/>
                                                     <TextBlock Text="Automatically load your Equalizer profile when the PC turns on." Foreground="{DynamicResource MutedTextBrush}" FontSize="11" Margin="0,2,0,0"/>
                                                 </StackPanel>
-                                                <ToggleButton Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="True" VerticalAlignment="Center"/>
+
+                                                <ToggleButton x:Name="StartWithWindowsToggle" Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="True" VerticalAlignment="Center" Click="StartWithWindowsToggle_Click"/>
+
                                             </Grid>
 
                                             <Grid Margin="0,0,0,15">
@@ -1026,9 +1028,7 @@
                                                     <TextBlock Text="Minimize to System Tray" Foreground="{DynamicResource TextBrush}" FontSize="14" FontWeight="SemiBold"/>
                                                     <TextBlock Text="Hide the app to the taskbar instead of closing it entirely." Foreground="{DynamicResource MutedTextBrush}" FontSize="11" Margin="0,2,0,0"/>
                                                 </StackPanel>
-
                                                 <ToggleButton x:Name="MinimizeToTrayToggle" Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="True" VerticalAlignment="Center"/>
-
                                             </Grid>
 
                                             <Grid>
