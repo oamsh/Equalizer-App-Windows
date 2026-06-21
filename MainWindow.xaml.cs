@@ -9,12 +9,13 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Windows.Media.Control;
 using Microsoft.Win32;
 using NAudio.Wave;
-using NAudio.CoreAudioApi; // Added to handle volume/visualizers cleanly
+using NAudio.CoreAudioApi;
 
 // --- AMBIGUITY FIXES ---
 using Point = System.Windows.Point;
@@ -116,7 +117,6 @@ namespace EqualizerPro
             _visualizerTimer.Interval = TimeSpan.FromMilliseconds(16);
             _visualizerTimer.Tick += VisualizerTimer_Tick;
 
-            // Timer for the Recording feature
             _recordTimer = new DispatcherTimer();
             _recordTimer.Interval = TimeSpan.FromSeconds(1);
             _recordTimer.Tick += RecordTimer_Tick;
@@ -160,7 +160,7 @@ namespace EqualizerPro
         }
 
         // ==========================================
-        // Audio Recording Engine
+        // Audio Recording Engine & UX Animations
         // ==========================================
         private void RecordBtn_Click(object sender, MouseButtonEventArgs e)
         {
@@ -180,6 +180,18 @@ namespace EqualizerPro
         {
             try
             {
+                // --- NEW AUDIO DETECTION CHECK ---
+                bool isPlayingState = _currentSession?.GetPlaybackInfo()?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+                float currentPeak = SystemVolumeManager.GetPeakValue();
+
+                // If media is not actively registered as playing AND there is zero sound coming out of the speakers
+                if (!isPlayingState && currentPeak < 0.001f)
+                {
+                    MessageBox.Show("Please play a song first before starting the recording.", "No Audio Detected", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+                // ----------------------------------
+
                 _tempRecordPath = Path.Combine(Path.GetTempPath(), $"EqualizerPro_Rec_{Guid.NewGuid()}.wav");
                 _loopbackCapture = new WasapiLoopbackCapture();
                 _waveWriter = new WaveFileWriter(_tempRecordPath, _loopbackCapture.WaveFormat);
@@ -201,11 +213,45 @@ namespace EqualizerPro
                 RecordTimeText.Text = "00:00";
                 _recordTimer.Start();
 
-                // Blink Animation on the red dot
-                DoubleAnimation blink = new DoubleAnimation(1.0, 0.2, TimeSpan.FromMilliseconds(600));
-                blink.AutoReverse = true;
-                blink.RepeatBehavior = RepeatBehavior.Forever;
-                RecordBlinkDot.BeginAnimation(UIElement.OpacityProperty, blink);
+                // Dynamic Glow Animation
+                var glowEffect = new DropShadowEffect
+                {
+                    Color = Colors.Red,
+                    ShadowDepth = 0,
+                    BlurRadius = 5,
+                    Opacity = 1.0
+                };
+                RecordBlinkDot.Effect = glowEffect;
+
+                DoubleAnimation blurAnim = new DoubleAnimation(4, 18, TimeSpan.FromMilliseconds(800))
+                {
+                    AutoReverse = true,
+                    RepeatBehavior = RepeatBehavior.Forever,
+                    EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
+                };
+                glowEffect.BeginAnimation(DropShadowEffect.BlurRadiusProperty, blurAnim);
+
+                DoubleAnimation opacityAnim = new DoubleAnimation(1.0, 0.4, TimeSpan.FromMilliseconds(800))
+                {
+                    AutoReverse = true,
+                    RepeatBehavior = RepeatBehavior.Forever,
+                    EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
+                };
+                RecordBlinkDot.BeginAnimation(UIElement.OpacityProperty, opacityAnim);
+
+                var bgGlowAnim = new ColorAnimation
+                {
+                    From = Color.FromArgb(26, 255, 255, 255),
+                    To = Color.FromArgb(40, 255, 50, 50),
+                    Duration = TimeSpan.FromMilliseconds(800),
+                    AutoReverse = true,
+                    RepeatBehavior = RepeatBehavior.Forever,
+                    EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
+                };
+
+                var recordBgBrush = new SolidColorBrush(Color.FromArgb(26, 255, 255, 255));
+                NavRecordActive.Background = recordBgBrush;
+                recordBgBrush.BeginAnimation(SolidColorBrush.ColorProperty, bgGlowAnim);
             }
             catch (Exception ex)
             {
@@ -218,27 +264,33 @@ namespace EqualizerPro
             _isRecording = false;
             _recordTimer.Stop();
 
-            // Calling StopRecording triggers the RecordingStopped event where we handle the file save
             _loopbackCapture?.StopRecording();
 
             // Reset UI
             NavRecordActive.Visibility = Visibility.Collapsed;
             NavRecordBtn.Visibility = Visibility.Visible;
+
             RecordBlinkDot.BeginAnimation(UIElement.OpacityProperty, null);
             RecordBlinkDot.Opacity = 1.0;
+
+            if (RecordBlinkDot.Effect is DropShadowEffect glow)
+            {
+                glow.BeginAnimation(DropShadowEffect.BlurRadiusProperty, null);
+            }
+            RecordBlinkDot.Effect = null;
+
+            NavRecordActive.Background = (SolidColorBrush)FindResource("GlassOverlayBrush");
         }
 
         private void LoopbackCapture_RecordingStopped(object sender, StoppedEventArgs e)
         {
             Dispatcher.Invoke(() =>
             {
-                // Safely close the temporary file
                 _waveWriter?.Dispose();
                 _waveWriter = null;
                 _loopbackCapture?.Dispose();
                 _loopbackCapture = null;
 
-                // Open Save Dialog
                 SaveFileDialog saveFileDialog = new SaveFileDialog
                 {
                     Filter = "WAV Audio File (*.wav)|*.wav",
@@ -261,7 +313,6 @@ namespace EqualizerPro
                     }
                 }
 
-                // Delete the hidden temporary file
                 if (File.Exists(_tempRecordPath))
                 {
                     try { File.Delete(_tempRecordPath); } catch { }
