@@ -647,7 +647,7 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
-                            <Border Grid.Column="0" Style="{StaticResource GlassPanel}" Margin="0,0,5,0" Padding="15">
+                            <Border x:Name="FreqResponsePanel" Grid.Column="0" Style="{StaticResource GlassPanel}" Margin="0,0,5,0" Padding="15">
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
@@ -793,7 +793,7 @@
                                 </Grid>
                             </Border>
 
-                            <Border Grid.Column="2" Style="{StaticResource GlassPanel}" Margin="5,0,0,0" Padding="15">
+                            <Border x:Name="SpectrumAnalyzerPanel" Grid.Column="2" Style="{StaticResource GlassPanel}" Margin="5,0,0,0" Padding="15">
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
@@ -976,7 +976,6 @@
                                                     <TextBlock Text="Visualizer Frame Rate" Foreground="{DynamicResource TextBrush}" FontSize="14" FontWeight="SemiBold"/>
                                                     <TextBlock Text="Lower the frame rate to save CPU/GPU resources on laptops." Foreground="{DynamicResource MutedTextBrush}" FontSize="11" Margin="0,2,0,0"/>
                                                 </StackPanel>
-
                                                 <ComboBox x:Name="VisualizerFpsSelector" Grid.Column="1" Width="150" Height="30" SelectedIndex="1" Style="{StaticResource DarkComboBox}" VerticalAlignment="Center" SelectionChanged="VisualizerFpsSelector_SelectionChanged">
                                                     <ComboBoxItem Content="30 FPS (Eco)"/>
                                                     <ComboBoxItem Content="60 FPS (Default)"/>
@@ -993,7 +992,6 @@
                                                     <TextBlock Text="Spectrum Falloff Speed" Foreground="{DynamicResource TextBrush}" FontSize="14" FontWeight="SemiBold"/>
                                                     <TextBlock Text="Controls how fast the spectrum bars drop after a bass hit." Foreground="{DynamicResource MutedTextBrush}" FontSize="11" Margin="0,2,0,0"/>
                                                 </StackPanel>
-
                                                 <Slider x:Name="SpectrumFalloffSlider" Grid.Column="1" Width="150" Value="40" Maximum="100" Style="{StaticResource VolumeSlider}" VerticalAlignment="Center" ValueChanged="SpectrumFalloffSlider_ValueChanged"/>
                                             </Grid>
 

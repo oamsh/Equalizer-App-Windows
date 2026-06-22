@@ -69,8 +69,8 @@ namespace EqualizerPro
         private double[] _freqCurrents = new double[10];
         private double[] _spectrumTargets = new double[48];
         private double[] _spectrumCurrents = new double[48];
-        private double _spectrumFalloffDropRate = 2.0; // Default falloff speed
-        private bool _isEcoModeEnabled = false;        // Eco Mode toggle flag
+        private double _spectrumFalloffDropRate = 2.0;
+        private bool _isEcoModeEnabled = false;
 
         private double _leftDbTarget = 0;
         private double _leftDbCurrent = 0;
@@ -118,7 +118,7 @@ namespace EqualizerPro
             _playbackTimer.Tick += PlaybackTimer_Tick;
 
             _visualizerTimer = new DispatcherTimer();
-            _visualizerTimer.Interval = TimeSpan.FromMilliseconds(16.66); // Default 60 FPS
+            _visualizerTimer.Interval = TimeSpan.FromMilliseconds(16.66);
             _visualizerTimer.Tick += VisualizerTimer_Tick;
 
             _recordTimer = new DispatcherTimer();
@@ -198,7 +198,6 @@ namespace EqualizerPro
         private void SpectrumFalloffSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoadingSettings) return;
-            // Maps the 0-100 slider to a smooth falloff rate between 0.1 and 5.0
             _spectrumFalloffDropRate = (e.NewValue / 100.0) * 5.0;
             if (_spectrumFalloffDropRate < 0.1) _spectrumFalloffDropRate = 0.1;
         }
@@ -208,6 +207,20 @@ namespace EqualizerPro
             if (sender is ToggleButton toggle)
             {
                 _isEcoModeEnabled = toggle.IsChecked ?? false;
+
+                // Animate the opacity of the visualizer panels based on Eco Mode state
+                double targetOpacity = _isEcoModeEnabled ? 0.3 : 1.0;
+                var fadeAnim = new DoubleAnimation(targetOpacity, TimeSpan.FromMilliseconds(300));
+
+                if (FreqResponsePanel != null)
+                {
+                    FreqResponsePanel.BeginAnimation(UIElement.OpacityProperty, fadeAnim);
+                }
+
+                if (SpectrumAnalyzerPanel != null)
+                {
+                    SpectrumAnalyzerPanel.BeginAnimation(UIElement.OpacityProperty, fadeAnim);
+                }
             }
         }
 
@@ -235,7 +248,6 @@ namespace EqualizerPro
                 bool isPlayingState = _currentSession?.GetPlaybackInfo()?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
                 float currentPeak = SystemVolumeManager.GetPeakValue();
 
-                // Check if audio is currently playing before starting the recorder
                 if (!isPlayingState && currentPeak < 0.001f)
                 {
                     MessageBox.Show("Please play a song first before starting the recording.", "No Audio Detected", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -263,7 +275,6 @@ namespace EqualizerPro
                 RecordTimeText.Text = "00:00";
                 _recordTimer.Start();
 
-                // Dynamic Glow Animation
                 var glowEffect = new DropShadowEffect
                 {
                     Color = Colors.Red,
@@ -692,6 +703,11 @@ namespace EqualizerPro
                         {
                             _isEcoModeEnabled = isEco;
                             EcoModeToggle.IsChecked = isEco;
+
+                            // Initialize visualizer opacity based on loaded eco mode
+                            double targetOpacity = _isEcoModeEnabled ? 0.3 : 1.0;
+                            if (FreqResponsePanel != null) FreqResponsePanel.Opacity = targetOpacity;
+                            if (SpectrumAnalyzerPanel != null) SpectrumAnalyzerPanel.Opacity = targetOpacity;
                         }
                     }
 
@@ -1159,8 +1175,6 @@ namespace EqualizerPro
             }
             if (needsColorUpdate) PushColorsToUI();
 
-            // ECO MODE LOGIC: If Eco mode is on, we force rawPeak to 0. 
-            // This skips the heavy COM audio check and lets the visualizer bars smoothly fall to 0.
             float rawPeak = _isEcoModeEnabled ? 0f : SystemVolumeManager.GetPeakValue();
 
             double volumeFraction = VolumeSliderControl != null ? (VolumeSliderControl.Value / 100.0) : 1.0;
@@ -1168,7 +1182,6 @@ namespace EqualizerPro
 
             bool isPlayingState = _currentSession?.GetPlaybackInfo()?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
 
-            // Note: If Eco mode is enabled, this will become false immediately.
             bool isActuallyPlayingAudio = !_isEcoModeEnabled && isPlayingState && currentPeak > 0.001f;
 
             for (int i = 0; i < 10; i++)
@@ -1212,7 +1225,6 @@ namespace EqualizerPro
                     }
                     else
                     {
-                        // Using the new dynamic spectrum falloff rate here!
                         _spectrumCurrents[i] -= _spectrumFalloffDropRate;
                         if (_spectrumCurrents[i] < _spectrumTargets[i]) _spectrumCurrents[i] = _spectrumTargets[i];
                     }
