@@ -180,17 +180,15 @@ namespace EqualizerPro
         {
             try
             {
-                // --- NEW AUDIO DETECTION CHECK ---
                 bool isPlayingState = _currentSession?.GetPlaybackInfo()?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
                 float currentPeak = SystemVolumeManager.GetPeakValue();
 
-                // If media is not actively registered as playing AND there is zero sound coming out of the speakers
+                // Check if audio is currently playing before starting the recorder
                 if (!isPlayingState && currentPeak < 0.001f)
                 {
                     MessageBox.Show("Please play a song first before starting the recording.", "No Audio Detected", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
-                // ----------------------------------
 
                 _tempRecordPath = Path.Combine(Path.GetTempPath(), $"EqualizerPro_Rec_{Guid.NewGuid()}.wav");
                 _loopbackCapture = new WasapiLoopbackCapture();
@@ -405,15 +403,19 @@ namespace EqualizerPro
         // ==========================================
         private void SettingsBtn_Click(object sender, RoutedEventArgs e)
         {
-            if (NavEqActive == null || NavSettingsActive == null) return;
+            if (NavEqActive == null || NavSettingsActive == null || NavFxActive == null) return;
 
             NavEqActive.Visibility = Visibility.Collapsed;
             NavEqBtn.Visibility = Visibility.Visible;
+
+            NavFxActive.Visibility = Visibility.Collapsed;
+            NavFxBtn.Visibility = Visibility.Visible;
 
             NavSettingsActive.Visibility = Visibility.Visible;
             NavSettingsBtn.Visibility = Visibility.Collapsed;
 
             EqContentPanel.Visibility = Visibility.Collapsed;
+            if (FxContentPanel != null) FxContentPanel.Visibility = Visibility.Collapsed;
             SettingsContentPanel.Visibility = Visibility.Visible;
 
             var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250));
@@ -422,19 +424,44 @@ namespace EqualizerPro
 
         private void EqualizerBtn_Click(object sender, RoutedEventArgs e)
         {
-            if (NavEqActive == null || NavSettingsActive == null) return;
+            if (NavEqActive == null || NavSettingsActive == null || NavFxActive == null) return;
 
             NavEqActive.Visibility = Visibility.Visible;
             NavEqBtn.Visibility = Visibility.Collapsed;
+
+            NavFxActive.Visibility = Visibility.Collapsed;
+            NavFxBtn.Visibility = Visibility.Visible;
 
             NavSettingsActive.Visibility = Visibility.Collapsed;
             NavSettingsBtn.Visibility = Visibility.Visible;
 
             SettingsContentPanel.Visibility = Visibility.Collapsed;
+            if (FxContentPanel != null) FxContentPanel.Visibility = Visibility.Collapsed;
             EqContentPanel.Visibility = Visibility.Visible;
 
             var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250));
             EqContentPanel.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+        }
+
+        private void FxBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (NavEqActive == null || NavSettingsActive == null || NavFxActive == null) return;
+
+            NavEqActive.Visibility = Visibility.Collapsed;
+            NavEqBtn.Visibility = Visibility.Visible;
+
+            NavSettingsActive.Visibility = Visibility.Collapsed;
+            NavSettingsBtn.Visibility = Visibility.Visible;
+
+            NavFxActive.Visibility = Visibility.Visible;
+            NavFxBtn.Visibility = Visibility.Collapsed;
+
+            EqContentPanel.Visibility = Visibility.Collapsed;
+            SettingsContentPanel.Visibility = Visibility.Collapsed;
+            if (FxContentPanel != null) FxContentPanel.Visibility = Visibility.Visible;
+
+            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250));
+            FxContentPanel?.BeginAnimation(UIElement.OpacityProperty, fadeIn);
         }
 
         private void LoadProfileImage()
@@ -647,11 +674,6 @@ namespace EqualizerPro
                 }
             }
             catch { }
-        }
-
-        private void VolumeSliderControl_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            if (!_isUpdatingVolumeUI && IsLoaded) SystemVolumeManager.SetVolume(VolumeSliderControl.Value);
         }
 
         // ==========================================
@@ -1397,6 +1419,17 @@ namespace EqualizerPro
             }
         }
 
+        // ==========================================
+        // Window & Media Control Events
+        // ==========================================
+        private void VolumeSliderControl_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (!_isUpdatingVolumeUI && IsLoaded)
+            {
+                SystemVolumeManager.SetVolume(VolumeSliderControl.Value);
+            }
+        }
+
         private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (e.ButtonState == MouseButtonState.Pressed) DragMove();
@@ -1450,7 +1483,7 @@ namespace EqualizerPro
         {
             try
             {
-                var enumerator = new MMDeviceEnumerator();
+                var enumerator = new NAudio.CoreAudioApi.MMDeviceEnumerator();
                 return enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
             }
             catch { return null; }

@@ -352,6 +352,19 @@
                                     </StackPanel>
                                 </Button>
 
+                                <Border x:Name="NavFxActive" Style="{StaticResource GlassOverlay}" Padding="15,12" Margin="0,0,0,5" Visibility="Collapsed">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="✨" Foreground="{DynamicResource AccentBrush}" FontSize="16" FontFamily="Segoe UI Symbol" Margin="0,-2,0,0"/>
+                                        <TextBlock Text="Studio FX" Foreground="{DynamicResource TextBrush}" Margin="15,0,0,0" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                                <Button x:Name="NavFxBtn" Style="{StaticResource DarkButton}" BorderThickness="0" Padding="15,12" HorizontalContentAlignment="Left" Margin="0,0,0,5" Click="FxBtn_Click">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="✨" Foreground="{DynamicResource MutedTextBrush}" FontSize="16" FontFamily="Segoe UI Symbol" Margin="0,-2,0,0"/>
+                                        <TextBlock Text="Studio FX" Margin="15,0,0,0" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+
                                 <Button Style="{StaticResource DarkButton}" BorderThickness="0" Padding="15,12" HorizontalContentAlignment="Left" Margin="0,0,0,5">
                                     <StackPanel Orientation="Horizontal">
                                         <Path Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.5" Stretch="Uniform" Width="14" Height="14" Data="M8,1 L10,5 L15,5 L11,8 L13,13 L8,10 L3,13 L5,8 L1,5 L6,5 Z"/>
@@ -1045,6 +1058,127 @@
                             </ScrollViewer>
                         </Grid>
                     </Border>
+
+                    <Border x:Name="FxContentPanel" Grid.Column="1" Style="{StaticResource GlassPanel}" Margin="0,0,10,10" Padding="25" Visibility="Collapsed">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Text="Studio Effects" FontWeight="SemiBold" FontSize="20" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,20"/>
+
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel Margin="0,0,10,0">
+
+                                    <Border Style="{StaticResource GlassOverlay}" Padding="20" Margin="0,0,0,15">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,20">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <TextBlock Text="🎛️" Foreground="{DynamicResource AccentBrush}" FontSize="16" Margin="0,0,10,0"/>
+                                                    <TextBlock Text="Dynamic Compressor" Foreground="{DynamicResource TextBrush}" FontWeight="SemiBold" FontSize="16"/>
+                                                </StackPanel>
+                                                <ToggleButton x:Name="CompressorToggle" Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="False"/>
+                                            </Grid>
+
+                                            <Grid Margin="0,0,0,15">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="100"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="50"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="Threshold" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center"/>
+                                                <Slider x:Name="CompThresholdSlider" Grid.Column="1" Minimum="-60" Maximum="0" Value="-20" Style="{StaticResource VolumeSlider}" VerticalAlignment="Center" Margin="10,0"/>
+                                                <TextBlock Text="{Binding Value, ElementName=CompThresholdSlider, StringFormat={}{0:0} dB}" Grid.Column="2" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                            </Grid>
+
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="100"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="50"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="Ratio" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center"/>
+                                                <Slider x:Name="CompRatioSlider" Grid.Column="1" Minimum="1" Maximum="20" Value="4" Style="{StaticResource VolumeSlider}" VerticalAlignment="Center" Margin="10,0"/>
+                                                <TextBlock Text="{Binding Value, ElementName=CompRatioSlider, StringFormat={}{0:0.0} : 1}" Grid.Column="2" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border Style="{StaticResource GlassOverlay}" Padding="20" Margin="0,0,0,15">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,20">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <TextBlock Text="↔️" Foreground="{DynamicResource AccentBrush}" FontSize="16" Margin="0,0,10,0"/>
+                                                    <TextBlock Text="Stereo Widener" Foreground="{DynamicResource TextBrush}" FontWeight="SemiBold" FontSize="16"/>
+                                                </StackPanel>
+                                                <ToggleButton x:Name="StereoToggle" Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="False"/>
+                                            </Grid>
+
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="100"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="50"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="Width" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center"/>
+                                                <Slider x:Name="StereoWidthSlider" Grid.Column="1" Minimum="0" Maximum="200" Value="130" Style="{StaticResource VolumeSlider}" VerticalAlignment="Center" Margin="10,0"/>
+                                                <TextBlock Text="{Binding Value, ElementName=StereoWidthSlider, StringFormat={}{0:0}%}" Grid.Column="2" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border Style="{StaticResource GlassOverlay}" Padding="20">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,20">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <TextBlock Text="✂️" Foreground="{DynamicResource AccentBrush}" FontSize="16" Margin="0,0,10,0"/>
+                                                    <TextBlock Text="Precision Filters" Foreground="{DynamicResource TextBrush}" FontWeight="SemiBold" FontSize="16"/>
+                                                </StackPanel>
+                                                <ToggleButton x:Name="FiltersToggle" Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="False"/>
+                                            </Grid>
+
+                                            <Grid Margin="0,0,0,15">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="100"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="60"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="High-Pass" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center"/>
+                                                <Slider x:Name="HighPassSlider" Grid.Column="1" Minimum="20" Maximum="1000" Value="80" Style="{StaticResource VolumeSlider}" VerticalAlignment="Center" Margin="10,0"/>
+                                                <TextBlock Text="{Binding Value, ElementName=HighPassSlider, StringFormat={}{0:0} Hz}" Grid.Column="2" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                            </Grid>
+
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="100"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="60"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="Low-Pass" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center"/>
+                                                <Slider x:Name="LowPassSlider" Grid.Column="1" Minimum="1000" Maximum="20000" Value="18000" Style="{StaticResource VolumeSlider}" VerticalAlignment="Center" Margin="10,0"/>
+                                                <TextBlock Text="{Binding Value, ElementName=LowPassSlider, StringFormat={}{0:0} Hz}" Grid.Column="2" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
+
                 </Grid>
 
                 <Border Grid.Row="2" Style="{StaticResource GlassPanel}" Margin="10,0,10,10" Padding="20,10">
