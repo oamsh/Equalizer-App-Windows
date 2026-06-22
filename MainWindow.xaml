@@ -992,7 +992,7 @@
                                                     <TextBlock Text="Spectrum Falloff Speed" Foreground="{DynamicResource TextBrush}" FontSize="14" FontWeight="SemiBold"/>
                                                     <TextBlock Text="Controls how fast the spectrum bars drop after a bass hit." Foreground="{DynamicResource MutedTextBrush}" FontSize="11" Margin="0,2,0,0"/>
                                                 </StackPanel>
-                                                <Slider Grid.Column="1" Width="150" Value="40" Maximum="100" Style="{StaticResource VolumeSlider}" VerticalAlignment="Center"/>
+                                                <Slider x:Name="SpectrumFalloffSlider" Grid.Column="1" Width="150" Value="40" Maximum="100" Style="{StaticResource VolumeSlider}" VerticalAlignment="Center" ValueChanged="SpectrumFalloffSlider_ValueChanged"/>
                                             </Grid>
 
                                             <Grid>

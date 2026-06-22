@@ -24,8 +24,8 @@ using Application = System.Windows.Application;
 using ColorConverter = System.Windows.Media.ColorConverter;
 using MessageBox = System.Windows.MessageBox;
 using SaveFileDialog = Microsoft.Win32.SaveFileDialog;
-using ComboBox = System.Windows.Controls.ComboBox;          // <--- NEW FIX
-using ComboBoxItem = System.Windows.Controls.ComboBoxItem;  // <--- NEW FIX
+using ComboBox = System.Windows.Controls.ComboBox;
+using ComboBoxItem = System.Windows.Controls.ComboBoxItem;
 // -----------------------
 
 namespace EqualizerPro
@@ -69,6 +69,7 @@ namespace EqualizerPro
         private double[] _freqCurrents = new double[10];
         private double[] _spectrumTargets = new double[48];
         private double[] _spectrumCurrents = new double[48];
+        private double _spectrumFalloffDropRate = 2.0; // Default falloff speed
 
         private double _leftDbTarget = 0;
         private double _leftDbCurrent = 0;
@@ -162,7 +163,7 @@ namespace EqualizerPro
         }
 
         // ==========================================
-        // Settings: Visualizer Frame Rate Logic
+        // Settings: Visualizer Graphics Logic
         // ==========================================
         private void SetVisualizerFrameRate(int comboIndex)
         {
@@ -191,6 +192,15 @@ namespace EqualizerPro
             {
                 SetVisualizerFrameRate(comboBox.SelectedIndex);
             }
+        }
+
+        private void SpectrumFalloffSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (_isLoadingSettings) return;
+            // Maps the 0-100 slider to a smooth falloff rate between 0.1 and 5.0
+            // A value of 40 equals a 2.0 pixel drop rate (the original default)
+            _spectrumFalloffDropRate = (e.NewValue / 100.0) * 5.0;
+            if (_spectrumFalloffDropRate < 0.1) _spectrumFalloffDropRate = 0.1;
         }
 
         // ==========================================
@@ -546,10 +556,11 @@ namespace EqualizerPro
                 string minTrayState = (MinimizeToTrayToggle?.IsChecked ?? true).ToString();
                 string startWinState = (StartWithWindowsToggle?.IsChecked ?? false).ToString();
                 string fpsIndex = (VisualizerFpsSelector?.SelectedIndex ?? 1).ToString();
+                string falloffValue = (SpectrumFalloffSlider?.Value ?? 40).ToString();
 
                 File.WriteAllLines(GetSettingsFilePath(), new string[] {
                     currentPreset, toggleState, darkModeState, accentColorHex,
-                    alwaysOnTopState, minTrayState, startWinState, fpsIndex
+                    alwaysOnTopState, minTrayState, startWinState, fpsIndex, falloffValue
                 });
             }
             catch { }
@@ -658,6 +669,14 @@ namespace EqualizerPro
                         }
                     }
 
+                    if (lines.Length >= 9 && SpectrumFalloffSlider != null)
+                    {
+                        if (double.TryParse(lines[8], out double falloffVal))
+                        {
+                            SpectrumFalloffSlider.Value = falloffVal;
+                        }
+                    }
+
                     SyncThemeVariablesToTarget();
                 }
             }
@@ -721,14 +740,6 @@ namespace EqualizerPro
                 }
             }
             catch { }
-        }
-
-        private void VolumeSliderControl_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            if (!_isUpdatingVolumeUI && IsLoaded)
-            {
-                SystemVolumeManager.SetVolume(VolumeSliderControl.Value);
-            }
         }
 
         // ==========================================
@@ -1170,7 +1181,8 @@ namespace EqualizerPro
                     }
                     else
                     {
-                        _spectrumCurrents[i] -= 2.0;
+                        // Using the new dynamic spectrum falloff rate here!
+                        _spectrumCurrents[i] -= _spectrumFalloffDropRate;
                         if (_spectrumCurrents[i] < _spectrumTargets[i]) _spectrumCurrents[i] = _spectrumTargets[i];
                     }
 
@@ -1421,6 +1433,17 @@ namespace EqualizerPro
             }
         }
 
+        // ==========================================
+        // Window & Media Control Events
+        // ==========================================
+        private void VolumeSliderControl_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (!_isUpdatingVolumeUI && IsLoaded)
+            {
+                SystemVolumeManager.SetVolume(VolumeSliderControl.Value);
+            }
+        }
+
         private async void PlayPause_Click(object sender, MouseButtonEventArgs e)
         {
             e.Handled = true;
@@ -1474,9 +1497,6 @@ namespace EqualizerPro
             }
         }
 
-        // ==========================================
-        // Window Events
-        // ==========================================
         private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (e.ButtonState == MouseButtonState.Pressed) DragMove();
