@@ -45,6 +45,10 @@ namespace EqualizerPro
         private bool _isDraggingSeekbar = false;
         private bool _isUpdatingVolumeUI = false;
 
+        // UI State Variables
+        private bool _isCompactMode = false;
+        private int _activePanel = 0; // 0 = Equalizer, 1 = Studio FX, 2 = Settings
+
         // System Tray variables
         private System.Windows.Forms.NotifyIcon _notifyIcon;
         private bool _isForceClosing = false;
@@ -164,6 +168,117 @@ namespace EqualizerPro
         }
 
         // ==========================================
+        // UI Navigation & Compact Mode Logic
+        // ==========================================
+        private void CompactModeBtn_Click(object sender, RoutedEventArgs e)
+        {
+            _isCompactMode = !_isCompactMode;
+
+            if (_isCompactMode)
+            {
+                CompactModeBtn.Content = "🗖"; // Change to Restore icon
+
+                // Hide main content panels
+                SidebarBorder.Visibility = Visibility.Collapsed;
+                EqContentPanel.Visibility = Visibility.Collapsed;
+                if (FxContentPanel != null) FxContentPanel.Visibility = Visibility.Collapsed;
+                SettingsContentPanel.Visibility = Visibility.Collapsed;
+
+                // Animate to compact size (600x180)
+                DoubleAnimation widthAnim = new DoubleAnimation(this.ActualWidth, 600, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
+                DoubleAnimation heightAnim = new DoubleAnimation(this.ActualHeight, 180, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
+
+                this.BeginAnimation(Window.WidthProperty, widthAnim);
+                this.BeginAnimation(Window.HeightProperty, heightAnim);
+            }
+            else
+            {
+                CompactModeBtn.Content = "🗗"; // Change back to Compact icon
+
+                // Show sidebar
+                SidebarBorder.Visibility = Visibility.Visible;
+
+                // Restore whichever panel was actively being viewed
+                if (_activePanel == 0) EqContentPanel.Visibility = Visibility.Visible;
+                else if (_activePanel == 1 && FxContentPanel != null) FxContentPanel.Visibility = Visibility.Visible;
+                else if (_activePanel == 2) SettingsContentPanel.Visibility = Visibility.Visible;
+
+                // Animate back to full size (1100x768)
+                DoubleAnimation widthAnim = new DoubleAnimation(this.ActualWidth, 1100, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
+                DoubleAnimation heightAnim = new DoubleAnimation(this.ActualHeight, 768, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
+
+                this.BeginAnimation(Window.WidthProperty, widthAnim);
+                this.BeginAnimation(Window.HeightProperty, heightAnim);
+            }
+        }
+
+        private void EqualizerBtn_Click(object sender, RoutedEventArgs e)
+        {
+            _activePanel = 0; // Update Memory
+            if (NavEqActive == null || NavSettingsActive == null || NavFxActive == null) return;
+
+            NavEqActive.Visibility = Visibility.Visible;
+            NavEqBtn.Visibility = Visibility.Collapsed;
+
+            NavFxActive.Visibility = Visibility.Collapsed;
+            NavFxBtn.Visibility = Visibility.Visible;
+
+            NavSettingsActive.Visibility = Visibility.Collapsed;
+            NavSettingsBtn.Visibility = Visibility.Visible;
+
+            SettingsContentPanel.Visibility = Visibility.Collapsed;
+            if (FxContentPanel != null) FxContentPanel.Visibility = Visibility.Collapsed;
+            EqContentPanel.Visibility = Visibility.Visible;
+
+            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250));
+            EqContentPanel.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+        }
+
+        private void FxBtn_Click(object sender, RoutedEventArgs e)
+        {
+            _activePanel = 1; // Update Memory
+            if (NavEqActive == null || NavSettingsActive == null || NavFxActive == null) return;
+
+            NavEqActive.Visibility = Visibility.Collapsed;
+            NavEqBtn.Visibility = Visibility.Visible;
+
+            NavSettingsActive.Visibility = Visibility.Collapsed;
+            NavSettingsBtn.Visibility = Visibility.Visible;
+
+            NavFxActive.Visibility = Visibility.Visible;
+            NavFxBtn.Visibility = Visibility.Collapsed;
+
+            EqContentPanel.Visibility = Visibility.Collapsed;
+            SettingsContentPanel.Visibility = Visibility.Collapsed;
+            if (FxContentPanel != null) FxContentPanel.Visibility = Visibility.Visible;
+
+            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250));
+            FxContentPanel?.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+        }
+
+        private void SettingsBtn_Click(object sender, RoutedEventArgs e)
+        {
+            _activePanel = 2; // Update Memory
+            if (NavEqActive == null || NavSettingsActive == null || NavFxActive == null) return;
+
+            NavEqActive.Visibility = Visibility.Collapsed;
+            NavEqBtn.Visibility = Visibility.Visible;
+
+            NavFxActive.Visibility = Visibility.Collapsed;
+            NavFxBtn.Visibility = Visibility.Visible;
+
+            NavSettingsActive.Visibility = Visibility.Visible;
+            NavSettingsBtn.Visibility = Visibility.Collapsed;
+
+            EqContentPanel.Visibility = Visibility.Collapsed;
+            if (FxContentPanel != null) FxContentPanel.Visibility = Visibility.Collapsed;
+            SettingsContentPanel.Visibility = Visibility.Visible;
+
+            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250));
+            SettingsContentPanel.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+        }
+
+        // ==========================================
         // Settings: Visualizer Graphics Logic
         // ==========================================
         private void SetVisualizerFrameRate(int comboIndex)
@@ -208,19 +323,11 @@ namespace EqualizerPro
             {
                 _isEcoModeEnabled = toggle.IsChecked ?? false;
 
-                // Animate the opacity of the visualizer panels based on Eco Mode state
                 double targetOpacity = _isEcoModeEnabled ? 0.3 : 1.0;
                 var fadeAnim = new DoubleAnimation(targetOpacity, TimeSpan.FromMilliseconds(300));
 
-                if (FreqResponsePanel != null)
-                {
-                    FreqResponsePanel.BeginAnimation(UIElement.OpacityProperty, fadeAnim);
-                }
-
-                if (SpectrumAnalyzerPanel != null)
-                {
-                    SpectrumAnalyzerPanel.BeginAnimation(UIElement.OpacityProperty, fadeAnim);
-                }
+                if (EqFreqResponsePanel != null) EqFreqResponsePanel.BeginAnimation(UIElement.OpacityProperty, fadeAnim);
+                if (EqSpectrumPanel != null) EqSpectrumPanel.BeginAnimation(UIElement.OpacityProperty, fadeAnim);
             }
         }
 
@@ -461,72 +568,6 @@ namespace EqualizerPro
             base.OnClosing(e);
         }
 
-        // ==========================================
-        // Sidebar Navigation
-        // ==========================================
-        private void SettingsBtn_Click(object sender, RoutedEventArgs e)
-        {
-            if (NavEqActive == null || NavSettingsActive == null || NavFxActive == null) return;
-
-            NavEqActive.Visibility = Visibility.Collapsed;
-            NavEqBtn.Visibility = Visibility.Visible;
-
-            NavFxActive.Visibility = Visibility.Collapsed;
-            NavFxBtn.Visibility = Visibility.Visible;
-
-            NavSettingsActive.Visibility = Visibility.Visible;
-            NavSettingsBtn.Visibility = Visibility.Collapsed;
-
-            EqContentPanel.Visibility = Visibility.Collapsed;
-            if (FxContentPanel != null) FxContentPanel.Visibility = Visibility.Collapsed;
-            SettingsContentPanel.Visibility = Visibility.Visible;
-
-            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250));
-            SettingsContentPanel.BeginAnimation(UIElement.OpacityProperty, fadeIn);
-        }
-
-        private void EqualizerBtn_Click(object sender, RoutedEventArgs e)
-        {
-            if (NavEqActive == null || NavSettingsActive == null || NavFxActive == null) return;
-
-            NavEqActive.Visibility = Visibility.Visible;
-            NavEqBtn.Visibility = Visibility.Collapsed;
-
-            NavFxActive.Visibility = Visibility.Collapsed;
-            NavFxBtn.Visibility = Visibility.Visible;
-
-            NavSettingsActive.Visibility = Visibility.Collapsed;
-            NavSettingsBtn.Visibility = Visibility.Visible;
-
-            SettingsContentPanel.Visibility = Visibility.Collapsed;
-            if (FxContentPanel != null) FxContentPanel.Visibility = Visibility.Collapsed;
-            EqContentPanel.Visibility = Visibility.Visible;
-
-            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250));
-            EqContentPanel.BeginAnimation(UIElement.OpacityProperty, fadeIn);
-        }
-
-        private void FxBtn_Click(object sender, RoutedEventArgs e)
-        {
-            if (NavEqActive == null || NavSettingsActive == null || NavFxActive == null) return;
-
-            NavEqActive.Visibility = Visibility.Collapsed;
-            NavEqBtn.Visibility = Visibility.Visible;
-
-            NavSettingsActive.Visibility = Visibility.Collapsed;
-            NavSettingsBtn.Visibility = Visibility.Visible;
-
-            NavFxActive.Visibility = Visibility.Visible;
-            NavFxBtn.Visibility = Visibility.Collapsed;
-
-            EqContentPanel.Visibility = Visibility.Collapsed;
-            SettingsContentPanel.Visibility = Visibility.Collapsed;
-            if (FxContentPanel != null) FxContentPanel.Visibility = Visibility.Visible;
-
-            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250));
-            FxContentPanel?.BeginAnimation(UIElement.OpacityProperty, fadeIn);
-        }
-
         private void LoadProfileImage()
         {
             try
@@ -704,10 +745,9 @@ namespace EqualizerPro
                             _isEcoModeEnabled = isEco;
                             EcoModeToggle.IsChecked = isEco;
 
-                            // Initialize visualizer opacity based on loaded eco mode
                             double targetOpacity = _isEcoModeEnabled ? 0.3 : 1.0;
-                            if (FreqResponsePanel != null) FreqResponsePanel.Opacity = targetOpacity;
-                            if (SpectrumAnalyzerPanel != null) SpectrumAnalyzerPanel.Opacity = targetOpacity;
+                            if (EqFreqResponsePanel != null) EqFreqResponsePanel.Opacity = targetOpacity;
+                            if (EqSpectrumPanel != null) EqSpectrumPanel.Opacity = targetOpacity;
                         }
                     }
 
@@ -1201,7 +1241,8 @@ namespace EqualizerPro
             }
             DrawFrequencyGraph();
 
-            if (SpectrumGrid != null)
+            // FIXED: Using EqSpectrumGrid instead of SpectrumGrid
+            if (EqSpectrumGrid != null)
             {
                 for (int i = 0; i < 48; i++)
                 {
@@ -1231,14 +1272,15 @@ namespace EqualizerPro
 
                     if (_spectrumCurrents[i] < 2) _spectrumCurrents[i] = 2;
 
-                    if (SpectrumGrid.Children.Count > i && SpectrumGrid.Children[i] is Border border)
+                    if (EqSpectrumGrid.Children.Count > i && EqSpectrumGrid.Children[i] is Border border)
                     {
                         border.Height = _spectrumCurrents[i];
                     }
                 }
             }
 
-            if (LeftVuTrack != null && RightVuTrack != null)
+            // FIXED: Using EqLeftVuTrack and EqRightVuTrack
+            if (EqLeftVuTrack != null && EqRightVuTrack != null)
             {
                 if (isActuallyPlayingAudio)
                 {
@@ -1260,34 +1302,35 @@ namespace EqualizerPro
                 if (_rightDbCurrent > _rightPeak) _rightPeak = _rightDbCurrent;
                 else _rightPeak = Math.Max(0, _rightPeak - 0.01);
 
-                double trackHeight = LeftVuTrack.ActualHeight > 0 ? LeftVuTrack.ActualHeight : 80;
+                double trackHeight = EqLeftVuTrack.ActualHeight > 0 ? EqLeftVuTrack.ActualHeight : 80;
 
-                LeftVuFill.Height = Math.Max(0, _leftDbCurrent * trackHeight);
-                RightVuFill.Height = Math.Max(0, _rightDbCurrent * trackHeight);
+                EqLeftVuFill.Height = Math.Max(0, _leftDbCurrent * trackHeight);
+                EqRightVuFill.Height = Math.Max(0, _rightDbCurrent * trackHeight);
 
-                LeftVuPeak.Margin = new Thickness(0, 0, 0, Math.Max(0, _leftPeak * trackHeight));
-                RightVuPeak.Margin = new Thickness(0, 0, 0, Math.Max(0, _rightPeak * trackHeight));
+                EqLeftVuPeak.Margin = new Thickness(0, 0, 0, Math.Max(0, _leftPeak * trackHeight));
+                EqRightVuPeak.Margin = new Thickness(0, 0, 0, Math.Max(0, _rightPeak * trackHeight));
 
-                if (LeftDbText != null && RightDbText != null)
+                if (EqLeftDbText != null && EqRightDbText != null)
                 {
                     double leftDbVal = _leftDbCurrent > 0.001 ? 20 * Math.Log10(_leftDbCurrent) : -60.0;
                     double rightDbVal = _rightDbCurrent > 0.001 ? 20 * Math.Log10(_rightDbCurrent) : -60.0;
 
-                    LeftDbText.Text = leftDbVal <= -59.0 ? "-inf" : leftDbVal.ToString("0.0");
-                    RightDbText.Text = rightDbVal <= -59.0 ? "-inf" : rightDbVal.ToString("0.0");
+                    EqLeftDbText.Text = leftDbVal <= -59.0 ? "-inf" : leftDbVal.ToString("0.0");
+                    EqRightDbText.Text = rightDbVal <= -59.0 ? "-inf" : rightDbVal.ToString("0.0");
                 }
             }
         }
 
         private void DrawFrequencyGraph()
         {
-            if (FreqResponseLine == null || FreqResponseFill == null) return;
+            // FIXED: Using EqFreqResponseLine and EqFreqResponseFill
+            if (EqFreqResponseLine == null || EqFreqResponseFill == null) return;
 
             Point[] points = new Point[10];
             for (int i = 0; i < 10; i++) points[i] = new Point(i * 11.11, _freqCurrents[i]);
 
             var geometry = CreateSmoothCurve(points);
-            FreqResponseLine.Data = geometry;
+            EqFreqResponseLine.Data = geometry;
 
             var fillGeometry = CreateSmoothCurve(points);
             var figure = ((PathGeometry)fillGeometry).Figures[0];
@@ -1295,7 +1338,7 @@ namespace EqualizerPro
             figure.Segments.Add(new LineSegment(new Point(0, 100), false));
             figure.IsClosed = true;
 
-            FreqResponseFill.Data = fillGeometry;
+            EqFreqResponseFill.Data = fillGeometry;
         }
 
         private PathGeometry CreateSmoothCurve(Point[] points)

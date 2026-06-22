@@ -300,12 +300,12 @@
                     <RowDefinition Height="120"/>
                 </Grid.RowDefinitions>
 
-                <Grid Grid.Row="0" Background="Transparent" Margin="15,0">
+                <Grid x:Name="TopBarGrid" Grid.Row="0" Background="Transparent" Margin="15,0">
                     <TextBlock x:Name="AppTitleText" Text="Equalizer Pro" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="14" Foreground="{DynamicResource TextBrush}"/>
 
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                         <TextBlock Text="Theme:" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="12"/>
-                        <ComboBox x:Name="ThemeSelector" Width="120" Height="26" SelectedIndex="0" Style="{StaticResource DarkComboBox}" Margin="0,0,5,0" SelectionChanged="ThemeSelector_ThemeChanged">
+                        <ComboBox x:Name="ThemeSelector" Width="120" Height="26" SelectedIndex="0" Style="{StaticResource DarkComboBox}" Margin="0,0,10,0" SelectionChanged="ThemeSelector_ThemeChanged">
                             <ComboBoxItem Content="Blue (Default)"/>
                             <ComboBoxItem Content="Red"/>
                             <ComboBoxItem Content="Green"/>
@@ -314,9 +314,11 @@
                             <ComboBoxItem Content="Cyan"/>
                         </ComboBox>
 
-                        <Button x:Name="CustomColorBtn" Content="🎨" Width="26" Height="26" Style="{StaticResource DarkButton}" Margin="0,0,15,0" Click="CustomColorBtn_Click" ToolTip="Custom Color" FontSize="12"/>
+                        <Button x:Name="CustomColorBtn" Content="🎨" Width="26" Height="26" Style="{StaticResource DarkButton}" Margin="0,0,10,0" Click="CustomColorBtn_Click" ToolTip="Custom Color" FontSize="12"/>
 
-                        <Button x:Name="ModeSwitchBtn" Content="☀" Width="35" Height="26" Style="{StaticResource DarkButton}" Margin="0,0,20,0" Click="ModeSwitchBtn_Click" ToolTip="Toggle Light/Dark Mode" FontSize="14"/>
+                        <Button x:Name="ModeSwitchBtn" Content="☀" Width="35" Height="26" Style="{StaticResource DarkButton}" Margin="0,0,10,0" Click="ModeSwitchBtn_Click" ToolTip="Toggle Light/Dark Mode" FontSize="14"/>
+
+                        <Button x:Name="CompactModeBtn" Content="🗗" Width="35" Height="26" Style="{StaticResource DarkButton}" Margin="0,0,20,0" Click="CompactModeBtn_Click" ToolTip="Toggle Compact Mode" FontSize="14"/>
 
                         <Button Content="—" Width="35" Style="{StaticResource DarkButton}" BorderThickness="0" Click="Minimize_Click"/>
                         <Button Content="□" Width="35" Style="{StaticResource DarkButton}" BorderThickness="0" Click="Maximize_Click"/>
@@ -326,11 +328,11 @@
 
                 <Grid Grid.Row="1">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="220"/>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
-                    <Border Grid.Column="0" Style="{StaticResource GlassPanel}" Margin="10,0,10,10">
+                    <Border x:Name="SidebarBorder" Grid.Column="0" Width="220" Style="{StaticResource GlassPanel}" Margin="10,0,10,10">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="*"/>
@@ -647,7 +649,7 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
-                            <Border x:Name="FreqResponsePanel" Grid.Column="0" Style="{StaticResource GlassPanel}" Margin="0,0,5,0" Padding="15">
+                            <Border x:Name="EqFreqResponsePanel" Grid.Column="0" Style="{StaticResource GlassPanel}" Margin="0,0,5,0" Padding="15">
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
@@ -715,9 +717,9 @@
                                                 <Border BorderBrush="{DynamicResource GlassOverlayBrush}" BorderThickness="1,0,1,0"/>
                                             </UniformGrid>
 
-                                            <Path x:Name="FreqResponseFill" Stretch="Fill" Fill="{DynamicResource FreqFillGradientBrush}" Data="M 0,80 C 1,75 5,72 10,70 S 15,62 20,60 S 25,48 30,45 S 35,32 40,30 S 45,34 50,35 S 55,43 60,45 S 65,53 70,55 S 75,52 80,50 S 85,53 90,55 S 95,52 100,50 L 100,100 L 0,100 Z" Margin="0,6,0,6"/>
+                                            <Path x:Name="EqFreqResponseFill" Stretch="Fill" Fill="{DynamicResource FreqFillGradientBrush}" Data="M 0,80 C 1,75 5,72 10,70 S 15,62 20,60 S 25,48 30,45 S 35,32 40,30 S 45,34 50,35 S 55,43 60,45 S 65,53 70,55 S 75,52 80,50 S 85,53 90,55 S 95,52 100,50 L 100,100 L 0,100 Z" Margin="0,6,0,6"/>
 
-                                            <Path x:Name="FreqResponseLine" Stretch="Fill" Stroke="{DynamicResource AccentBrushLight}" StrokeThickness="2" StrokeLineJoin="Round" Data="M 0,80 C 1,75 5,72 10,70 S 15,62 20,60 S 25,48 30,45 S 35,32 40,30 S 45,34 50,35 S 55,43 60,45 S 65,53 70,55 S 75,52 80,50 S 85,53 90,55 S 95,52 100,50" Margin="0,6,0,6">
+                                            <Path x:Name="EqFreqResponseLine" Stretch="Fill" Stroke="{DynamicResource AccentBrushLight}" StrokeThickness="2" StrokeLineJoin="Round" Data="M 0,80 C 1,75 5,72 10,70 S 15,62 20,60 S 25,48 30,45 S 35,32 40,30 S 45,34 50,35 S 55,43 60,45 S 65,53 70,55 S 75,52 80,50 S 85,53 90,55 S 95,52 100,50" Margin="0,6,0,6">
                                                 <Path.Effect>
                                                     <DropShadowEffect Color="{DynamicResource AccentColorLight}" BlurRadius="12" ShadowDepth="0"/>
                                                 </Path.Effect>
@@ -760,15 +762,15 @@
                                             <TextBlock Grid.Row="4" Text="-48" Foreground="{DynamicResource MutedTextBrush}" FontSize="8" HorizontalAlignment="Center" VerticalAlignment="Bottom"/>
                                         </Grid>
 
-                                        <Border x:Name="LeftVuTrack" Grid.Column="1" Background="{DynamicResource GlassOverlayBrush}" CornerRadius="3">
-                                            <Border x:Name="LeftVuFill" Background="{DynamicResource VuMeterGradientBrush}" CornerRadius="3" Height="0" VerticalAlignment="Bottom"/>
+                                        <Border x:Name="EqLeftVuTrack" Grid.Column="1" Background="{DynamicResource GlassOverlayBrush}" CornerRadius="3">
+                                            <Border x:Name="EqLeftVuFill" Background="{DynamicResource VuMeterGradientBrush}" CornerRadius="3" Height="0" VerticalAlignment="Bottom"/>
                                         </Border>
-                                        <Border x:Name="LeftVuPeak" Grid.Column="1" Background="White" Height="2" CornerRadius="1" VerticalAlignment="Bottom"/>
+                                        <Border x:Name="EqLeftVuPeak" Grid.Column="1" Background="White" Height="2" CornerRadius="1" VerticalAlignment="Bottom"/>
 
-                                        <Border x:Name="RightVuTrack" Grid.Column="3" Background="{DynamicResource GlassOverlayBrush}" CornerRadius="3">
-                                            <Border x:Name="RightVuFill" Background="{DynamicResource VuMeterGradientBrush}" CornerRadius="3" Height="0" VerticalAlignment="Bottom"/>
+                                        <Border x:Name="EqRightVuTrack" Grid.Column="3" Background="{DynamicResource GlassOverlayBrush}" CornerRadius="3">
+                                            <Border x:Name="EqRightVuFill" Background="{DynamicResource VuMeterGradientBrush}" CornerRadius="3" Height="0" VerticalAlignment="Bottom"/>
                                         </Border>
-                                        <Border x:Name="RightVuPeak" Grid.Column="3" Background="White" Height="2" CornerRadius="1" VerticalAlignment="Bottom"/>
+                                        <Border x:Name="EqRightVuPeak" Grid.Column="3" Background="White" Height="2" CornerRadius="1" VerticalAlignment="Bottom"/>
                                     </Grid>
 
                                     <Grid Grid.Row="2" Margin="0,2,0,0">
@@ -781,19 +783,19 @@
                                         </Grid.ColumnDefinitions>
 
                                         <StackPanel Grid.Column="1" HorizontalAlignment="Center">
-                                            <TextBlock x:Name="LeftDbText" Text="-inf" FontSize="8" Foreground="{DynamicResource TextBrush}" HorizontalAlignment="Center" Margin="0,0,0,2"/>
+                                            <TextBlock x:Name="EqLeftDbText" Text="-inf" FontSize="8" Foreground="{DynamicResource TextBrush}" HorizontalAlignment="Center" Margin="0,0,0,2"/>
                                             <TextBlock Text="L" FontSize="9" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center"/>
                                         </StackPanel>
 
                                         <StackPanel Grid.Column="3" HorizontalAlignment="Center">
-                                            <TextBlock x:Name="RightDbText" Text="-inf" FontSize="8" Foreground="{DynamicResource TextBrush}" HorizontalAlignment="Center" Margin="0,0,0,2"/>
+                                            <TextBlock x:Name="EqRightDbText" Text="-inf" FontSize="8" Foreground="{DynamicResource TextBrush}" HorizontalAlignment="Center" Margin="0,0,0,2"/>
                                             <TextBlock Text="R" FontSize="9" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                     </Grid>
                                 </Grid>
                             </Border>
 
-                            <Border x:Name="SpectrumAnalyzerPanel" Grid.Column="2" Style="{StaticResource GlassPanel}" Margin="5,0,0,0" Padding="15">
+                            <Border x:Name="EqSpectrumPanel" Grid.Column="2" Style="{StaticResource GlassPanel}" Margin="5,0,0,0" Padding="15">
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
@@ -855,7 +857,7 @@
                                             <Line Y1="0" Y2="0" X1="0" X2="10000" Stretch="Fill" Stroke="{DynamicResource BorderBrush}" VerticalAlignment="Center"/>
                                             <Line Y1="0" Y2="0" X1="0" X2="10000" Stretch="Fill" Stroke="{DynamicResource BorderBrush}" VerticalAlignment="Bottom" Margin="0,0,0,6"/>
 
-                                            <UniformGrid x:Name="SpectrumGrid" Columns="48" Margin="0,6,0,6" VerticalAlignment="Bottom" Height="80">
+                                            <UniformGrid x:Name="EqSpectrumGrid" Columns="48" Margin="0,6,0,6" VerticalAlignment="Bottom" Height="80">
                                                 <Border Style="{StaticResource SpectrumBar}" Height="15"/>
                                                 <Border Style="{StaticResource SpectrumBar}" Height="22"/>
                                                 <Border Style="{StaticResource SpectrumBar}" Height="35"/>
@@ -976,6 +978,7 @@
                                                     <TextBlock Text="Visualizer Frame Rate" Foreground="{DynamicResource TextBrush}" FontSize="14" FontWeight="SemiBold"/>
                                                     <TextBlock Text="Lower the frame rate to save CPU/GPU resources on laptops." Foreground="{DynamicResource MutedTextBrush}" FontSize="11" Margin="0,2,0,0"/>
                                                 </StackPanel>
+
                                                 <ComboBox x:Name="VisualizerFpsSelector" Grid.Column="1" Width="150" Height="30" SelectedIndex="1" Style="{StaticResource DarkComboBox}" VerticalAlignment="Center" SelectionChanged="VisualizerFpsSelector_SelectionChanged">
                                                     <ComboBoxItem Content="30 FPS (Eco)"/>
                                                     <ComboBoxItem Content="60 FPS (Default)"/>
@@ -992,6 +995,7 @@
                                                     <TextBlock Text="Spectrum Falloff Speed" Foreground="{DynamicResource TextBrush}" FontSize="14" FontWeight="SemiBold"/>
                                                     <TextBlock Text="Controls how fast the spectrum bars drop after a bass hit." Foreground="{DynamicResource MutedTextBrush}" FontSize="11" Margin="0,2,0,0"/>
                                                 </StackPanel>
+
                                                 <Slider x:Name="SpectrumFalloffSlider" Grid.Column="1" Width="150" Value="40" Maximum="100" Style="{StaticResource VolumeSlider}" VerticalAlignment="Center" ValueChanged="SpectrumFalloffSlider_ValueChanged"/>
                                             </Grid>
 
