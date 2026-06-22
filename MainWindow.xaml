@@ -976,7 +976,7 @@
                                                     <TextBlock Text="Visualizer Frame Rate" Foreground="{DynamicResource TextBrush}" FontSize="14" FontWeight="SemiBold"/>
                                                     <TextBlock Text="Lower the frame rate to save CPU/GPU resources on laptops." Foreground="{DynamicResource MutedTextBrush}" FontSize="11" Margin="0,2,0,0"/>
                                                 </StackPanel>
-                                                <ComboBox Grid.Column="1" Width="150" Height="30" SelectedIndex="1" Style="{StaticResource DarkComboBox}" VerticalAlignment="Center">
+                                                <ComboBox x:Name="VisualizerFpsSelector" Grid.Column="1" Width="150" Height="30" SelectedIndex="1" Style="{StaticResource DarkComboBox}" VerticalAlignment="Center" SelectionChanged="VisualizerFpsSelector_SelectionChanged">
                                                     <ComboBoxItem Content="30 FPS (Eco)"/>
                                                     <ComboBoxItem Content="60 FPS (Default)"/>
                                                     <ComboBoxItem Content="120 FPS (Ultra)"/>

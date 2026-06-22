@@ -24,6 +24,8 @@ using Application = System.Windows.Application;
 using ColorConverter = System.Windows.Media.ColorConverter;
 using MessageBox = System.Windows.MessageBox;
 using SaveFileDialog = Microsoft.Win32.SaveFileDialog;
+using ComboBox = System.Windows.Controls.ComboBox;          // <--- NEW FIX
+using ComboBoxItem = System.Windows.Controls.ComboBoxItem;  // <--- NEW FIX
 // -----------------------
 
 namespace EqualizerPro
@@ -114,7 +116,7 @@ namespace EqualizerPro
             _playbackTimer.Tick += PlaybackTimer_Tick;
 
             _visualizerTimer = new DispatcherTimer();
-            _visualizerTimer.Interval = TimeSpan.FromMilliseconds(16);
+            _visualizerTimer.Interval = TimeSpan.FromMilliseconds(16.66); // Default 60 FPS
             _visualizerTimer.Tick += VisualizerTimer_Tick;
 
             _recordTimer = new DispatcherTimer();
@@ -157,6 +159,38 @@ namespace EqualizerPro
 
             _visualizerTimer.Start();
             _isLoadingSettings = false;
+        }
+
+        // ==========================================
+        // Settings: Visualizer Frame Rate Logic
+        // ==========================================
+        private void SetVisualizerFrameRate(int comboIndex)
+        {
+            if (_visualizerTimer == null) return;
+
+            switch (comboIndex)
+            {
+                case 0: // 30 FPS (Eco)
+                    _visualizerTimer.Interval = TimeSpan.FromMilliseconds(33.33);
+                    break;
+                case 1: // 60 FPS (Default)
+                    _visualizerTimer.Interval = TimeSpan.FromMilliseconds(16.66);
+                    break;
+                case 2: // 120 FPS (Ultra)
+                    _visualizerTimer.Interval = TimeSpan.FromMilliseconds(8.33);
+                    break;
+            }
+        }
+
+        private void VisualizerFpsSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isLoadingSettings) return;
+
+            var comboBox = sender as ComboBox;
+            if (comboBox != null)
+            {
+                SetVisualizerFrameRate(comboBox.SelectedIndex);
+            }
         }
 
         // ==========================================
@@ -511,8 +545,12 @@ namespace EqualizerPro
                 string alwaysOnTopState = (AlwaysOnTopToggle?.IsChecked ?? false).ToString();
                 string minTrayState = (MinimizeToTrayToggle?.IsChecked ?? true).ToString();
                 string startWinState = (StartWithWindowsToggle?.IsChecked ?? false).ToString();
+                string fpsIndex = (VisualizerFpsSelector?.SelectedIndex ?? 1).ToString();
 
-                File.WriteAllLines(GetSettingsFilePath(), new string[] { currentPreset, toggleState, darkModeState, accentColorHex, alwaysOnTopState, minTrayState, startWinState });
+                File.WriteAllLines(GetSettingsFilePath(), new string[] {
+                    currentPreset, toggleState, darkModeState, accentColorHex,
+                    alwaysOnTopState, minTrayState, startWinState, fpsIndex
+                });
             }
             catch { }
         }
@@ -611,6 +649,15 @@ namespace EqualizerPro
                         }
                     }
 
+                    if (lines.Length >= 8 && VisualizerFpsSelector != null)
+                    {
+                        if (int.TryParse(lines[7], out int fpsIndex))
+                        {
+                            VisualizerFpsSelector.SelectedIndex = fpsIndex;
+                            SetVisualizerFrameRate(fpsIndex);
+                        }
+                    }
+
                     SyncThemeVariablesToTarget();
                 }
             }
@@ -674,6 +721,14 @@ namespace EqualizerPro
                 }
             }
             catch { }
+        }
+
+        private void VolumeSliderControl_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (!_isUpdatingVolumeUI && IsLoaded)
+            {
+                SystemVolumeManager.SetVolume(VolumeSliderControl.Value);
+            }
         }
 
         // ==========================================
@@ -1420,16 +1475,8 @@ namespace EqualizerPro
         }
 
         // ==========================================
-        // Window & Media Control Events
+        // Window Events
         // ==========================================
-        private void VolumeSliderControl_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            if (!_isUpdatingVolumeUI && IsLoaded)
-            {
-                SystemVolumeManager.SetVolume(VolumeSliderControl.Value);
-            }
-        }
-
         private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (e.ButtonState == MouseButtonState.Pressed) DragMove();
