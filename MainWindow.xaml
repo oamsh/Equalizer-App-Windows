@@ -304,6 +304,10 @@
                     <TextBlock x:Name="AppTitleText" Text="Equalizer Pro" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="14" Foreground="{DynamicResource TextBrush}"/>
 
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+
+                        <TextBlock x:Name="CompactEqLabel" Text="EQ:" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12" Visibility="{Binding Visibility, ElementName=CompactEqToggle}"/>
+                        <ToggleButton x:Name="CompactEqToggle" Style="{StaticResource ToggleSwitchStyle}" IsChecked="True" Visibility="Collapsed" Click="CompactEqToggle_Click" Margin="0,0,20,0" ToolTip="Enable/Disable Equalizer"/>
+
                         <TextBlock Text="Theme:" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="12"/>
                         <ComboBox x:Name="ThemeSelector" Width="120" Height="26" SelectedIndex="0" Style="{StaticResource DarkComboBox}" Margin="0,0,10,0" SelectionChanged="ThemeSelector_ThemeChanged">
                             <ComboBoxItem Content="Blue (Default)"/>

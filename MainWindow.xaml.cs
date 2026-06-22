@@ -184,6 +184,9 @@ namespace EqualizerPro
                 if (FxContentPanel != null) FxContentPanel.Visibility = Visibility.Collapsed;
                 SettingsContentPanel.Visibility = Visibility.Collapsed;
 
+                // Show the Compact EQ Toggle (we will add this in XAML next)
+                if (CompactEqToggle != null) CompactEqToggle.Visibility = Visibility.Visible;
+
                 // Animate to compact size (600x180)
                 DoubleAnimation widthAnim = new DoubleAnimation(this.ActualWidth, 600, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
                 DoubleAnimation heightAnim = new DoubleAnimation(this.ActualHeight, 180, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
@@ -194,6 +197,9 @@ namespace EqualizerPro
             else
             {
                 CompactModeBtn.Content = "🗗"; // Change back to Compact icon
+
+                // Hide the Compact EQ Toggle
+                if (CompactEqToggle != null) CompactEqToggle.Visibility = Visibility.Collapsed;
 
                 // Show sidebar
                 SidebarBorder.Visibility = Visibility.Visible;
@@ -654,7 +660,11 @@ namespace EqualizerPro
                         if (bool.TryParse(lines[1], out bool isEnabled))
                         {
                             _isEqEnabled = isEnabled;
-                            GlobalEqToggle.IsChecked = isEnabled;
+
+                            // Synchronize BOTH toggles
+                            if (GlobalEqToggle != null) GlobalEqToggle.IsChecked = isEnabled;
+                            if (CompactEqToggle != null) CompactEqToggle.IsChecked = isEnabled;
+
                             if (SlidersContainerGrid != null) SlidersContainerGrid.Opacity = _isEqEnabled ? 1.0 : 0.4;
                         }
                     }
@@ -838,9 +848,26 @@ namespace EqualizerPro
             _eqPresets.Add("Dance", new double[] { 8, 6, 2, 0, -2, -2, 0, 2, 4, 6 });
         }
 
+        // This triggers when the MAIN toggle is clicked
         private void GlobalEqToggle_Click(object sender, RoutedEventArgs e)
         {
             _isEqEnabled = GlobalEqToggle.IsChecked ?? false;
+
+            // Keep Compact toggle in sync
+            if (CompactEqToggle != null) CompactEqToggle.IsChecked = _isEqEnabled;
+
+            if (SlidersContainerGrid != null) SlidersContainerGrid.Opacity = _isEqEnabled ? 1.0 : 0.4;
+            ApplyEqToAudioStream();
+        }
+
+        // This triggers when the COMPACT toggle is clicked
+        private void CompactEqToggle_Click(object sender, RoutedEventArgs e)
+        {
+            _isEqEnabled = CompactEqToggle?.IsChecked ?? false;
+
+            // Keep Main toggle in sync
+            if (GlobalEqToggle != null) GlobalEqToggle.IsChecked = _isEqEnabled;
+
             if (SlidersContainerGrid != null) SlidersContainerGrid.Opacity = _isEqEnabled ? 1.0 : 0.4;
             ApplyEqToAudioStream();
         }
@@ -1241,7 +1268,6 @@ namespace EqualizerPro
             }
             DrawFrequencyGraph();
 
-            // FIXED: Using EqSpectrumGrid instead of SpectrumGrid
             if (EqSpectrumGrid != null)
             {
                 for (int i = 0; i < 48; i++)
@@ -1279,7 +1305,6 @@ namespace EqualizerPro
                 }
             }
 
-            // FIXED: Using EqLeftVuTrack and EqRightVuTrack
             if (EqLeftVuTrack != null && EqRightVuTrack != null)
             {
                 if (isActuallyPlayingAudio)
@@ -1323,7 +1348,6 @@ namespace EqualizerPro
 
         private void DrawFrequencyGraph()
         {
-            // FIXED: Using EqFreqResponseLine and EqFreqResponseFill
             if (EqFreqResponseLine == null || EqFreqResponseFill == null) return;
 
             Point[] points = new Point[10];
