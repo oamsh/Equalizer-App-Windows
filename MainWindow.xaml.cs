@@ -70,6 +70,7 @@ namespace EqualizerPro
         private double[] _spectrumTargets = new double[48];
         private double[] _spectrumCurrents = new double[48];
         private double _spectrumFalloffDropRate = 2.0; // Default falloff speed
+        private bool _isEcoModeEnabled = false;        // Eco Mode toggle flag
 
         private double _leftDbTarget = 0;
         private double _leftDbCurrent = 0;
@@ -198,9 +199,16 @@ namespace EqualizerPro
         {
             if (_isLoadingSettings) return;
             // Maps the 0-100 slider to a smooth falloff rate between 0.1 and 5.0
-            // A value of 40 equals a 2.0 pixel drop rate (the original default)
             _spectrumFalloffDropRate = (e.NewValue / 100.0) * 5.0;
             if (_spectrumFalloffDropRate < 0.1) _spectrumFalloffDropRate = 0.1;
+        }
+
+        private void EcoModeToggle_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleButton toggle)
+            {
+                _isEcoModeEnabled = toggle.IsChecked ?? false;
+            }
         }
 
         // ==========================================
@@ -557,10 +565,11 @@ namespace EqualizerPro
                 string startWinState = (StartWithWindowsToggle?.IsChecked ?? false).ToString();
                 string fpsIndex = (VisualizerFpsSelector?.SelectedIndex ?? 1).ToString();
                 string falloffValue = (SpectrumFalloffSlider?.Value ?? 40).ToString();
+                string ecoModeState = _isEcoModeEnabled.ToString();
 
                 File.WriteAllLines(GetSettingsFilePath(), new string[] {
                     currentPreset, toggleState, darkModeState, accentColorHex,
-                    alwaysOnTopState, minTrayState, startWinState, fpsIndex, falloffValue
+                    alwaysOnTopState, minTrayState, startWinState, fpsIndex, falloffValue, ecoModeState
                 });
             }
             catch { }
@@ -677,6 +686,15 @@ namespace EqualizerPro
                         }
                     }
 
+                    if (lines.Length >= 10 && EcoModeToggle != null)
+                    {
+                        if (bool.TryParse(lines[9], out bool isEco))
+                        {
+                            _isEcoModeEnabled = isEco;
+                            EcoModeToggle.IsChecked = isEco;
+                        }
+                    }
+
                     SyncThemeVariablesToTarget();
                 }
             }
@@ -740,6 +758,14 @@ namespace EqualizerPro
                 }
             }
             catch { }
+        }
+
+        private void VolumeSliderControl_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (!_isUpdatingVolumeUI && IsLoaded)
+            {
+                SystemVolumeManager.SetVolume(VolumeSliderControl.Value);
+            }
         }
 
         // ==========================================
@@ -1133,12 +1159,17 @@ namespace EqualizerPro
             }
             if (needsColorUpdate) PushColorsToUI();
 
-            float rawPeak = SystemVolumeManager.GetPeakValue();
+            // ECO MODE LOGIC: If Eco mode is on, we force rawPeak to 0. 
+            // This skips the heavy COM audio check and lets the visualizer bars smoothly fall to 0.
+            float rawPeak = _isEcoModeEnabled ? 0f : SystemVolumeManager.GetPeakValue();
+
             double volumeFraction = VolumeSliderControl != null ? (VolumeSliderControl.Value / 100.0) : 1.0;
             float currentPeak = (float)(rawPeak * volumeFraction);
 
             bool isPlayingState = _currentSession?.GetPlaybackInfo()?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
-            bool isActuallyPlayingAudio = isPlayingState && currentPeak > 0.001f;
+
+            // Note: If Eco mode is enabled, this will become false immediately.
+            bool isActuallyPlayingAudio = !_isEcoModeEnabled && isPlayingState && currentPeak > 0.001f;
 
             for (int i = 0; i < 10; i++)
             {
@@ -1430,17 +1461,6 @@ namespace EqualizerPro
                     CurrentTimeText.Text = string.Format("{0}:{1:D2}", Math.Floor(currentPosition.TotalMinutes), currentPosition.Seconds);
                     TotalTimeText.Text = string.Format("{0}:{1:D2}", Math.Floor(timeline.EndTime.TotalMinutes), timeline.EndTime.Seconds);
                 });
-            }
-        }
-
-        // ==========================================
-        // Window & Media Control Events
-        // ==========================================
-        private void VolumeSliderControl_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            if (!_isUpdatingVolumeUI && IsLoaded)
-            {
-                SystemVolumeManager.SetVolume(VolumeSliderControl.Value);
             }
         }
 
