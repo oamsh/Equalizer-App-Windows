@@ -188,6 +188,11 @@ namespace EqualizerPro
                 // Show the Compact EQ Toggle
                 if (CompactEqToggle != null) CompactEqToggle.Visibility = Visibility.Visible;
 
+                // DYNAMIC SPACING FIX: Shrink the volume slider and track info to prevent overlapping play buttons
+                if (TrackTitle != null) { TrackTitle.MaxWidth = 85; TrackTitle.TextTrimming = TextTrimming.CharacterEllipsis; }
+                if (TrackArtist != null) { TrackArtist.MaxWidth = 85; TrackArtist.TextTrimming = TextTrimming.CharacterEllipsis; }
+                if (VolumeSliderControl != null) VolumeSliderControl.Width = 60;
+
                 // Animate to compact size (600x180)
                 DoubleAnimation widthAnim = new DoubleAnimation(this.ActualWidth, 600, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
                 DoubleAnimation heightAnim = new DoubleAnimation(this.ActualHeight, 180, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
@@ -205,6 +210,11 @@ namespace EqualizerPro
                 // Show sidebar and title text
                 SidebarBorder.Visibility = Visibility.Visible;
                 if (AppTitleText != null) AppTitleText.Visibility = Visibility.Visible;
+
+                // DYNAMIC SPACING RESTORE: Let elements return to their full beautiful width
+                if (TrackTitle != null) TrackTitle.MaxWidth = Double.PositiveInfinity;
+                if (TrackArtist != null) TrackArtist.MaxWidth = Double.PositiveInfinity;
+                if (VolumeSliderControl != null) VolumeSliderControl.Width = 110;
 
                 // Restore whichever panel was actively being viewed
                 if (_activePanel == 0) EqContentPanel.Visibility = Visibility.Visible;
