@@ -1204,10 +1204,13 @@
                                 <ColumnDefinition Width="35"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock x:Name="CurrentTimeText" Text="0:00" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0"/>
+
                             <Slider x:Name="SeekSlider" Grid.Column="1" Style="{StaticResource VolumeSlider}" VerticalAlignment="Center"
                                     Thumb.DragStarted="SeekSlider_DragStarted" 
                                     Thumb.DragCompleted="SeekSlider_DragCompleted" 
-                                    ValueChanged="SeekSlider_ValueChanged"/>
+                                    ValueChanged="SeekSlider_ValueChanged"
+                                    PreviewMouseLeftButtonUp="SeekSlider_PreviewMouseLeftButtonUp"/>
+
                             <TextBlock x:Name="TotalTimeText" Text="0:00" Grid.Column="2" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" VerticalAlignment="Center" Margin="8,0,0,0"/>
                         </Grid>
 

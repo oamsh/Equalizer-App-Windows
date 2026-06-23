@@ -114,6 +114,11 @@ namespace EqualizerPro
         {
             InitializeComponent();
 
+            // Enable instant click-to-jump on sliders
+            if (SeekSlider != null) SeekSlider.IsMoveToPointEnabled = true;
+            if (VolumeSliderControl != null) VolumeSliderControl.IsMoveToPointEnabled = true;
+            if (SpectrumFalloffSlider != null) SpectrumFalloffSlider.IsMoveToPointEnabled = true;
+
             _eqSliders = new Slider[] { Slider1, Slider2, Slider3, Slider4, Slider5, Slider6, Slider7, Slider8, Slider9, Slider10 };
             InitializePresets();
 
@@ -1603,6 +1608,17 @@ namespace EqualizerPro
             {
                 var tempPosition = TimeSpan.FromSeconds(SeekSlider.Value);
                 CurrentTimeText.Text = string.Format("{0}:{1:D2}", Math.Floor(tempPosition.TotalMinutes), tempPosition.Seconds);
+            }
+        }
+
+        private async void SeekSlider_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (_currentSession != null && !_isDraggingSeekbar)
+            {
+                var newPosition = TimeSpan.FromSeconds(SeekSlider.Value);
+                await _currentSession.TryChangePlaybackPositionAsync(newPosition.Ticks);
+
+                CurrentTimeText.Text = string.Format("{0}:{1:D2}", Math.Floor(newPosition.TotalMinutes), newPosition.Seconds);
             }
         }
 
