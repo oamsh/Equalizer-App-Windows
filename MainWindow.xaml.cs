@@ -141,6 +141,7 @@ namespace EqualizerPro
             for (int i = 0; i < 48; i++) _spectrumCurrents[i] = 2;
 
             Loaded += MainWindow_Loaded;
+            SizeChanged += MainWindow_SizeChanged;
             InitializeSystemTray();
         }
 
@@ -173,6 +174,11 @@ namespace EqualizerPro
 
             _visualizerTimer.Start();
             _isLoadingSettings = false;
+        }
+
+        private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            UpdateWaveformMask();
         }
 
         // ==========================================
@@ -945,10 +951,6 @@ namespace EqualizerPro
                     {
                         if (_isFatModeEnabled)
                         {
-                            // A beautifully balanced "Fat" curve.
-                            // Adds +4.5dB of low-end warmth and +2.0dB of presence.
-                            // AGC (Automatic Gain Compensation) drops the main preamp by -3.5dB
-                            // to absolutely prevent the Windows limiter from pumping the kick drums.
                             double lowBoost = 4.5;
                             double harmonicBoost = 2.0;
                             double preampComp = -3.5;
@@ -969,6 +971,50 @@ namespace EqualizerPro
                 }
             }
             catch { }
+        }
+
+        // ==========================================
+        // Faux Waveform Engine
+        // ==========================================
+        private Geometry GenerateWaveformGeometry(string seedStr)
+        {
+            int seed = seedStr != null ? seedStr.GetHashCode() : 0;
+            Random rnd = new Random(seed);
+            GeometryGroup group = new GeometryGroup();
+
+            int numBars = 100;
+            double width = 1000;
+            double maxH = 40;
+            double barWidth = width / numBars;
+            double gap = barWidth * 0.4;
+
+            for (int i = 0; i < numBars; i++)
+            {
+                double h = maxH * (0.1 + rnd.NextDouble() * 0.9);
+                double envelope = Math.Sin((i / (double)numBars) * Math.PI);
+                h = h * (0.4 + 0.6 * envelope);
+
+                double x = i * barWidth;
+                double y = (maxH - h) / 2;
+
+                group.Children.Add(new RectangleGeometry(new Rect(x, y, barWidth - gap, h), 2, 2));
+            }
+            return group;
+        }
+
+        private void UpdateWaveformMask()
+        {
+            if (WaveformPlayedMask != null && SeekSlider != null && SeekSlider.Maximum > 0)
+            {
+                double percent = SeekSlider.Value / SeekSlider.Maximum;
+                if (double.IsNaN(percent) || double.IsInfinity(percent)) percent = 0;
+
+                double newWidth = percent * SeekSlider.ActualWidth;
+                if (double.IsNaN(newWidth) || double.IsInfinity(newWidth) || newWidth < 0) newWidth = 0;
+
+                // Fix for CS1061: Use the Rect property to set the width and height of the mask
+                WaveformPlayedMask.Rect = new Rect(0, 0, newWidth, 20);
+            }
         }
 
         // ==========================================
@@ -1473,6 +1519,10 @@ namespace EqualizerPro
                     TotalTimeText.Text = "0:00";
                     SeekSlider.Value = 0;
 
+                    // Clear faux waveform
+                    if (WaveformPathUnplayed != null) WaveformPathUnplayed.Data = null;
+                    if (WaveformPathPlayed != null) WaveformPathPlayed.Data = null;
+
                     PlayPauseIcon.Data = Geometry.Parse(PlayIconData);
                     PlayPauseIcon.Margin = new Thickness(3, 0, 0, 0);
                 });
@@ -1517,6 +1567,12 @@ namespace EqualizerPro
                     Dispatcher.Invoke(() => {
                         TrackTitle.Text = title;
                         TrackArtist.Text = artist;
+
+                        // Generate the unique faux-waveform seeded by the track title
+                        Geometry wave = GenerateWaveformGeometry(title);
+                        if (WaveformPathUnplayed != null) WaveformPathUnplayed.Data = wave;
+                        if (WaveformPathPlayed != null) WaveformPathPlayed.Data = wave;
+
                         if (bitmapImage != null)
                         {
                             TrackImageBrush.ImageSource = bitmapImage;
@@ -1582,6 +1638,8 @@ namespace EqualizerPro
 
                     CurrentTimeText.Text = string.Format("{0}:{1:D2}", Math.Floor(currentPosition.TotalMinutes), currentPosition.Seconds);
                     TotalTimeText.Text = string.Format("{0}:{1:D2}", Math.Floor(timeline.EndTime.TotalMinutes), timeline.EndTime.Seconds);
+
+                    UpdateWaveformMask();
                 });
             }
         }
@@ -1632,6 +1690,7 @@ namespace EqualizerPro
 
         private void SeekSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
+            UpdateWaveformMask();
             if (_isDraggingSeekbar)
             {
                 var tempPosition = TimeSpan.FromSeconds(SeekSlider.Value);

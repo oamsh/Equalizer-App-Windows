@@ -1231,11 +1231,22 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock x:Name="CurrentTimeText" Text="0:00" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0"/>
 
-                            <Slider x:Name="SeekSlider" Grid.Column="1" Style="{StaticResource VolumeSlider}" VerticalAlignment="Center"
-                                    Thumb.DragStarted="SeekSlider_DragStarted" 
-                                    Thumb.DragCompleted="SeekSlider_DragCompleted" 
-                                    ValueChanged="SeekSlider_ValueChanged"
-                                    PreviewMouseLeftButtonUp="SeekSlider_PreviewMouseLeftButtonUp"/>
+                            <Grid Grid.Column="1" VerticalAlignment="Center" Margin="8,0">
+
+                                <Path x:Name="WaveformPathUnplayed" Stroke="{DynamicResource BorderBrush}" StrokeThickness="1.5" Stretch="Fill" Height="14" VerticalAlignment="Center" IsHitTestVisible="False"/>
+
+                                <Path x:Name="WaveformPathPlayed" Stroke="{DynamicResource AccentBrush}" StrokeThickness="1.5" Stretch="Fill" Height="14" VerticalAlignment="Center" IsHitTestVisible="False">
+                                    <Path.Clip>
+                                        <RectangleGeometry x:Name="WaveformPlayedMask" Rect="0,0,0,20"/>
+                                    </Path.Clip>
+                                </Path>
+
+                                <Slider x:Name="SeekSlider" Minimum="0" Maximum="100" Opacity="0"
+                                        Thumb.DragStarted="SeekSlider_DragStarted" 
+                                        Thumb.DragCompleted="SeekSlider_DragCompleted" 
+                                        ValueChanged="SeekSlider_ValueChanged"
+                                        PreviewMouseLeftButtonUp="SeekSlider_PreviewMouseLeftButtonUp"/>
+                            </Grid>
 
                             <TextBlock x:Name="TotalTimeText" Text="0:00" Grid.Column="2" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" VerticalAlignment="Center" Margin="8,0,0,0"/>
                         </Grid>
