@@ -178,13 +178,14 @@ namespace EqualizerPro
             {
                 CompactModeBtn.Content = "🗖"; // Change to Restore icon
 
-                // Hide main content panels
+                // Hide main content panels and title text
                 SidebarBorder.Visibility = Visibility.Collapsed;
                 EqContentPanel.Visibility = Visibility.Collapsed;
                 if (FxContentPanel != null) FxContentPanel.Visibility = Visibility.Collapsed;
                 SettingsContentPanel.Visibility = Visibility.Collapsed;
+                if (AppTitleText != null) AppTitleText.Visibility = Visibility.Collapsed;
 
-                // Show the Compact EQ Toggle (we will add this in XAML next)
+                // Show the Compact EQ Toggle
                 if (CompactEqToggle != null) CompactEqToggle.Visibility = Visibility.Visible;
 
                 // Animate to compact size (600x180)
@@ -201,8 +202,9 @@ namespace EqualizerPro
                 // Hide the Compact EQ Toggle
                 if (CompactEqToggle != null) CompactEqToggle.Visibility = Visibility.Collapsed;
 
-                // Show sidebar
+                // Show sidebar and title text
                 SidebarBorder.Visibility = Visibility.Visible;
+                if (AppTitleText != null) AppTitleText.Visibility = Visibility.Visible;
 
                 // Restore whichever panel was actively being viewed
                 if (_activePanel == 0) EqContentPanel.Visibility = Visibility.Visible;
@@ -848,7 +850,6 @@ namespace EqualizerPro
             _eqPresets.Add("Dance", new double[] { 8, 6, 2, 0, -2, -2, 0, 2, 4, 6 });
         }
 
-        // This triggers when the MAIN toggle is clicked
         private void GlobalEqToggle_Click(object sender, RoutedEventArgs e)
         {
             _isEqEnabled = GlobalEqToggle.IsChecked ?? false;
@@ -860,7 +861,6 @@ namespace EqualizerPro
             ApplyEqToAudioStream();
         }
 
-        // This triggers when the COMPACT toggle is clicked
         private void CompactEqToggle_Click(object sender, RoutedEventArgs e)
         {
             _isEqEnabled = CompactEqToggle?.IsChecked ?? false;
