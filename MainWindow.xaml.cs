@@ -26,6 +26,7 @@ using MessageBox = System.Windows.MessageBox;
 using SaveFileDialog = Microsoft.Win32.SaveFileDialog;
 using ComboBox = System.Windows.Controls.ComboBox;
 using ComboBoxItem = System.Windows.Controls.ComboBoxItem;
+using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 // -----------------------
 
 namespace EqualizerPro
@@ -66,6 +67,9 @@ namespace EqualizerPro
         private Dictionary<string, double[]> _eqPresets = new Dictionary<string, double[]>();
         private bool _isUpdatingPreset = false;
         private bool _isEqEnabled = true;
+
+        // Fat Mode Variables
+        private bool _isFatModeEnabled = false;
 
         // Visualizer & DB Meter Variables
         private DispatcherTimer _visualizerTimer;
@@ -114,7 +118,6 @@ namespace EqualizerPro
         {
             InitializeComponent();
 
-            // Enable instant click-to-jump on sliders
             if (SeekSlider != null) SeekSlider.IsMoveToPointEnabled = true;
             if (VolumeSliderControl != null) VolumeSliderControl.IsMoveToPointEnabled = true;
             if (SpectrumFalloffSlider != null) SpectrumFalloffSlider.IsMoveToPointEnabled = true;
@@ -181,24 +184,20 @@ namespace EqualizerPro
 
             if (_isCompactMode)
             {
-                CompactModeBtn.Content = "🗖"; // Change to Restore icon
+                CompactModeBtn.Content = "🗖";
 
-                // Hide main content panels and title text
                 SidebarBorder.Visibility = Visibility.Collapsed;
                 EqContentPanel.Visibility = Visibility.Collapsed;
                 if (FxContentPanel != null) FxContentPanel.Visibility = Visibility.Collapsed;
                 SettingsContentPanel.Visibility = Visibility.Collapsed;
                 if (AppTitleText != null) AppTitleText.Visibility = Visibility.Collapsed;
 
-                // Show the Compact EQ Toggle
                 if (CompactEqToggle != null) CompactEqToggle.Visibility = Visibility.Visible;
 
-                // DYNAMIC SPACING FIX: Shrink the volume slider and track info to prevent overlapping play buttons
                 if (TrackTitle != null) { TrackTitle.MaxWidth = 85; TrackTitle.TextTrimming = TextTrimming.CharacterEllipsis; }
                 if (TrackArtist != null) { TrackArtist.MaxWidth = 85; TrackArtist.TextTrimming = TextTrimming.CharacterEllipsis; }
                 if (VolumeSliderControl != null) VolumeSliderControl.Width = 60;
 
-                // Animate to compact size (600x180)
                 DoubleAnimation widthAnim = new DoubleAnimation(this.ActualWidth, 600, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
                 DoubleAnimation heightAnim = new DoubleAnimation(this.ActualHeight, 180, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
 
@@ -207,26 +206,21 @@ namespace EqualizerPro
             }
             else
             {
-                CompactModeBtn.Content = "🗗"; // Change back to Compact icon
+                CompactModeBtn.Content = "🗗";
 
-                // Hide the Compact EQ Toggle
                 if (CompactEqToggle != null) CompactEqToggle.Visibility = Visibility.Collapsed;
 
-                // Show sidebar and title text
                 SidebarBorder.Visibility = Visibility.Visible;
                 if (AppTitleText != null) AppTitleText.Visibility = Visibility.Visible;
 
-                // DYNAMIC SPACING RESTORE: Let elements return to their full beautiful width
                 if (TrackTitle != null) TrackTitle.MaxWidth = Double.PositiveInfinity;
                 if (TrackArtist != null) TrackArtist.MaxWidth = Double.PositiveInfinity;
                 if (VolumeSliderControl != null) VolumeSliderControl.Width = 110;
 
-                // Restore whichever panel was actively being viewed
                 if (_activePanel == 0) EqContentPanel.Visibility = Visibility.Visible;
                 else if (_activePanel == 1 && FxContentPanel != null) FxContentPanel.Visibility = Visibility.Visible;
                 else if (_activePanel == 2) SettingsContentPanel.Visibility = Visibility.Visible;
 
-                // Animate back to full size (1100x768)
                 DoubleAnimation widthAnim = new DoubleAnimation(this.ActualWidth, 1100, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
                 DoubleAnimation heightAnim = new DoubleAnimation(this.ActualHeight, 768, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
 
@@ -237,7 +231,7 @@ namespace EqualizerPro
 
         private void EqualizerBtn_Click(object sender, RoutedEventArgs e)
         {
-            _activePanel = 0; // Update Memory
+            _activePanel = 0;
             if (NavEqActive == null || NavSettingsActive == null || NavFxActive == null) return;
 
             NavEqActive.Visibility = Visibility.Visible;
@@ -259,7 +253,7 @@ namespace EqualizerPro
 
         private void FxBtn_Click(object sender, RoutedEventArgs e)
         {
-            _activePanel = 1; // Update Memory
+            _activePanel = 1;
             if (NavEqActive == null || NavSettingsActive == null || NavFxActive == null) return;
 
             NavEqActive.Visibility = Visibility.Collapsed;
@@ -281,7 +275,7 @@ namespace EqualizerPro
 
         private void SettingsBtn_Click(object sender, RoutedEventArgs e)
         {
-            _activePanel = 2; // Update Memory
+            _activePanel = 2;
             if (NavEqActive == null || NavSettingsActive == null || NavFxActive == null) return;
 
             NavEqActive.Visibility = Visibility.Collapsed;
@@ -299,6 +293,18 @@ namespace EqualizerPro
 
             var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250));
             SettingsContentPanel.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+        }
+
+        // ==========================================
+        // Fat Mode Switch Logic
+        // ==========================================
+        private void FatModeToggle_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleButton toggle)
+            {
+                _isFatModeEnabled = toggle.IsChecked ?? false;
+                ApplyEqToAudioStream();
+            }
         }
 
         // ==========================================
@@ -641,10 +647,11 @@ namespace EqualizerPro
                 string fpsIndex = (VisualizerFpsSelector?.SelectedIndex ?? 1).ToString();
                 string falloffValue = (SpectrumFalloffSlider?.Value ?? 40).ToString();
                 string ecoModeState = _isEcoModeEnabled.ToString();
+                string fatModeState = _isFatModeEnabled.ToString();
 
                 File.WriteAllLines(GetSettingsFilePath(), new string[] {
                     currentPreset, toggleState, darkModeState, accentColorHex,
-                    alwaysOnTopState, minTrayState, startWinState, fpsIndex, falloffValue, ecoModeState
+                    alwaysOnTopState, minTrayState, startWinState, fpsIndex, falloffValue, ecoModeState, fatModeState
                 });
             }
             catch { }
@@ -678,7 +685,6 @@ namespace EqualizerPro
                         {
                             _isEqEnabled = isEnabled;
 
-                            // Synchronize BOTH toggles
                             if (GlobalEqToggle != null) GlobalEqToggle.IsChecked = isEnabled;
                             if (CompactEqToggle != null) CompactEqToggle.IsChecked = isEnabled;
 
@@ -778,6 +784,15 @@ namespace EqualizerPro
                         }
                     }
 
+                    if (lines.Length >= 11 && FatModeToggle != null)
+                    {
+                        if (bool.TryParse(lines[10], out bool isFat))
+                        {
+                            _isFatModeEnabled = isFat;
+                            FatModeToggle.IsChecked = isFat;
+                        }
+                    }
+
                     SyncThemeVariablesToTarget();
                 }
             }
@@ -869,7 +884,6 @@ namespace EqualizerPro
         {
             _isEqEnabled = GlobalEqToggle.IsChecked ?? false;
 
-            // Keep Compact toggle in sync
             if (CompactEqToggle != null) CompactEqToggle.IsChecked = _isEqEnabled;
 
             if (SlidersContainerGrid != null) SlidersContainerGrid.Opacity = _isEqEnabled ? 1.0 : 0.4;
@@ -880,7 +894,6 @@ namespace EqualizerPro
         {
             _isEqEnabled = CompactEqToggle?.IsChecked ?? false;
 
-            // Keep Main toggle in sync
             if (GlobalEqToggle != null) GlobalEqToggle.IsChecked = _isEqEnabled;
 
             if (SlidersContainerGrid != null) SlidersContainerGrid.Opacity = _isEqEnabled ? 1.0 : 0.4;
@@ -930,6 +943,21 @@ namespace EqualizerPro
 
                     if (_isEqEnabled)
                     {
+                        if (_isFatModeEnabled)
+                        {
+                            // A beautifully balanced "Fat" curve.
+                            // Adds +4.5dB of low-end warmth and +2.0dB of presence.
+                            // AGC (Automatic Gain Compensation) drops the main preamp by -3.5dB
+                            // to absolutely prevent the Windows limiter from pumping the kick drums.
+                            double lowBoost = 4.5;
+                            double harmonicBoost = 2.0;
+                            double preampComp = -3.5;
+
+                            eqCommand += $"Preamp: {preampComp:0.0} dB\n";
+                            eqCommand += $"Filter: ON LS Fc 120 Hz Gain {lowBoost:0.0} dB Q 0.7\n";
+                            eqCommand += $"Filter: ON PK Fc 2500 Hz Gain {harmonicBoost:0.0} dB Q 1.0\n";
+                        }
+
                         eqCommand += $"GraphicEQ: 31 {_eqSliders[0].Value:0.0}; 62 {_eqSliders[1].Value:0.0}; 125 {_eqSliders[2].Value:0.0}; 250 {_eqSliders[3].Value:0.0}; 500 {_eqSliders[4].Value:0.0}; 1000 {_eqSliders[5].Value:0.0}; 2000 {_eqSliders[6].Value:0.0}; 4000 {_eqSliders[7].Value:0.0}; 8000 {_eqSliders[8].Value:0.0}; 16000 {_eqSliders[9].Value:0.0}";
                     }
                     else
