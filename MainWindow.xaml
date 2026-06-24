@@ -420,9 +420,15 @@
                                     </StackPanel>
                                 </Button>
 
-                                <Button Style="{StaticResource DarkButton}" BorderThickness="0" Padding="15,12" HorizontalContentAlignment="Left" Margin="0,0,0,5">
+                                <Border x:Name="NavPlaybackActive" Style="{StaticResource GlassOverlay}" Padding="15,12" Margin="0,0,0,5" Visibility="Collapsed">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Path Stroke="{DynamicResource AccentBrush}" StrokeThickness="1.5" Fill="Transparent" Stretch="Uniform" Width="14" Height="14" Data="M8,1 A7,7 0 1,1 7.9,1 M6,4 L11,8 L6,12 Z"/>
+                                        <TextBlock Text="Playback" Foreground="{DynamicResource TextBrush}" Margin="15,0,0,0" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                                <Button x:Name="NavPlaybackBtn" Style="{StaticResource DarkButton}" BorderThickness="0" Padding="15,12" HorizontalContentAlignment="Left" Margin="0,0,0,5" Click="PlaybackNavBtn_Click">
                                     <StackPanel Orientation="Horizontal">
-                                        <Path Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.5" Stretch="Uniform" Width="14" Height="14" Data="M8,1 A7,7 0 1,1 7.9,1 M6,4 L11,8 L6,12 Z"/>
+                                        <Path Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.5" Fill="Transparent" Stretch="Uniform" Width="14" Height="14" Data="M8,1 A7,7 0 1,1 7.9,1 M6,4 L11,8 L6,12 Z"/>
                                         <TextBlock Text="Playback" Margin="15,0,0,0" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
@@ -1214,6 +1220,100 @@
                         </Grid>
                     </Border>
 
+                    <Border x:Name="PlaybackContentPanel" Grid.Column="1" Style="{StaticResource GlassPanel}" Margin="0,0,10,10" Padding="40" Visibility="Collapsed">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Text="Now Playing" FontWeight="SemiBold" FontSize="20" Foreground="{DynamicResource TextBrush}" HorizontalAlignment="Center"/>
+
+                            <Grid Grid.Row="1" Width="250" Height="250" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,10">
+
+                                <Ellipse Width="200" Height="200" Fill="{DynamicResource AccentBrush}" Opacity="0.5" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Ellipse.Effect>
+                                        <DropShadowEffect Color="{DynamicResource AccentColor}" BlurRadius="30" ShadowDepth="0"/>
+                                    </Ellipse.Effect>
+                                </Ellipse>
+
+                                <Ellipse Width="200" Height="200" Fill="#111520" Stroke="{DynamicResource BorderBrush}" StrokeThickness="2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                                <Grid Width="200" Height="200" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Grid.RenderTransform>
+                                        <RotateTransform x:Name="DiskRotation" Angle="0" CenterX="100" CenterY="100"/>
+                                    </Grid.RenderTransform>
+
+                                    <Ellipse Margin="8" Stroke="#1AFFFFFF" StrokeThickness="1" StrokeDashArray="4 4"/>
+                                    <Ellipse Margin="18" Stroke="#1AFFFFFF" StrokeThickness="1" StrokeDashArray="2 6"/>
+                                    <Ellipse Margin="28" Stroke="#1AFFFFFF" StrokeThickness="1" StrokeDashArray="6 2"/>
+                                    <Ellipse Margin="40" Stroke="#1AFFFFFF" StrokeThickness="1" StrokeDashArray="3 5"/>
+
+                                    <Ellipse Margin="55">
+                                        <Ellipse.Fill>
+                                            <ImageBrush x:Name="PlaybackBigImageBrush" Stretch="UniformToFill"/>
+                                        </Ellipse.Fill>
+                                    </Ellipse>
+                                </Grid>
+
+                                <Ellipse Width="14" Height="14" Fill="#0B0E14" Stroke="{DynamicResource BorderBrush}" StrokeThickness="1" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Ellipse Width="7" Height="7" Fill="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
+
+                            <StackPanel Grid.Row="2" HorizontalAlignment="Center" Margin="0,0,0,30">
+                                <TextBlock x:Name="PlaybackBigTitle" Text="{Binding Text, ElementName=TrackTitle}" FontSize="28" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" Margin="0,0,0,5"/>
+                                <TextBlock x:Name="PlaybackBigArtist" Text="{Binding Text, ElementName=TrackArtist}" FontSize="16" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+
+                            <Grid Grid.Row="3" Margin="40,0,40,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="40"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="40"/>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock x:Name="PlaybackBigCurrentTimeText" Text="{Binding Text, ElementName=CurrentTimeText}" Foreground="{DynamicResource MutedTextBrush}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,15,0"/>
+
+                                <Slider x:Name="PlaybackBigSeekSlider" Grid.Column="1" Style="{StaticResource VolumeSlider}" VerticalAlignment="Center" Margin="8,0"
+                                        Minimum="{Binding Minimum, ElementName=SeekSlider}" Maximum="{Binding Maximum, ElementName=SeekSlider}" Value="{Binding Value, ElementName=SeekSlider}"
+                                        Thumb.DragStarted="SeekSlider_DragStarted" 
+                                        Thumb.DragCompleted="SeekSlider_DragCompleted" 
+                                        ValueChanged="SeekSlider_ValueChanged"
+                                        PreviewMouseLeftButtonUp="SeekSlider_PreviewMouseLeftButtonUp"/>
+
+                                <TextBlock x:Name="PlaybackBigTotalTimeText" Text="{Binding Text, ElementName=TotalTimeText}" Grid.Column="2" Foreground="{DynamicResource MutedTextBrush}" FontSize="12" VerticalAlignment="Center" Margin="15,0,0,0"/>
+                            </Grid>
+
+                            <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,20,0,0">
+                                <Button Style="{StaticResource DarkButton}" BorderThickness="0" Width="40" Height="40" Margin="0,0,20,0">
+                                    <Path Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.5" Stretch="Uniform" Width="16" Height="16" Data="M2,10 L5,7 M9,3 L13,3 L13,7 M13,3 L9,7 M2,2 L13,13 M9,13 L13,13 L13,9"/>
+                                </Button>
+
+                                <Button x:Name="PlaybackBigPrevBtn" Style="{StaticResource DarkButton}" BorderThickness="0" Width="50" Height="50" Margin="0,0,20,0" Click="Previous_Click">
+                                    <Path Fill="{DynamicResource TextBrush}" Stretch="Uniform" Width="16" Height="16" Data="M10,2 L10,14 L3,8 Z M2,2 L3,2 L3,14 L2,14 Z"/>
+                                </Button>
+
+                                <Border x:Name="PlaybackBigPlayPauseBorder" MouseLeftButtonDown="PlayPause_Click" Cursor="Hand" Width="70" Height="70" Background="{DynamicResource AccentBrush}" CornerRadius="35" Margin="0,0,20,0">
+                                    <Border.Effect>
+                                        <DropShadowEffect Color="{DynamicResource AccentColor}" BlurRadius="25" ShadowDepth="0"/>
+                                    </Border.Effect>
+                                    <Path x:Name="PlaybackBigPlayPauseIcon" Fill="White" Stretch="Uniform" Width="24" Height="24" Margin="5,0,0,0" Data="{Binding Data, ElementName=PlayPauseIcon}"/>
+                                </Border>
+
+                                <Button x:Name="PlaybackBigNextBtn" Style="{StaticResource DarkButton}" BorderThickness="0" Width="50" Height="50" Margin="0,0,20,0" Click="Next_Click">
+                                    <Path Fill="{DynamicResource TextBrush}" Stretch="Uniform" Width="16" Height="16" Data="M2,2 L2,14 L9,8 Z M10,2 L11,2 L11,14 L10,14 Z"/>
+                                </Button>
+
+                                <Button Style="{StaticResource DarkButton}" BorderThickness="0" Width="40" Height="40">
+                                    <Path Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.5" Fill="Transparent" Stretch="Uniform" Width="16" Height="16" Data="M4,4 L12,4 A4,4 0 0,1 12,12 L4,12 A4,4 0 0,1 4,4 M10,2 L12,4 L10,6 M6,14 L4,12 L6,10"/>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
                 </Grid>
 
                 <Border Grid.Row="2" Style="{StaticResource GlassPanel}" Margin="10,0,10,10" Padding="20,10">
@@ -1231,22 +1331,11 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock x:Name="CurrentTimeText" Text="0:00" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0"/>
 
-                            <Grid Grid.Column="1" VerticalAlignment="Center" Margin="8,0">
-
-                                <Path x:Name="WaveformPathUnplayed" Stroke="{DynamicResource BorderBrush}" StrokeThickness="1.5" Stretch="Fill" Height="14" VerticalAlignment="Center" IsHitTestVisible="False"/>
-
-                                <Path x:Name="WaveformPathPlayed" Stroke="{DynamicResource AccentBrush}" StrokeThickness="1.5" Stretch="Fill" Height="14" VerticalAlignment="Center" IsHitTestVisible="False">
-                                    <Path.Clip>
-                                        <RectangleGeometry x:Name="WaveformPlayedMask" Rect="0,0,0,20"/>
-                                    </Path.Clip>
-                                </Path>
-
-                                <Slider x:Name="SeekSlider" Minimum="0" Maximum="100" Opacity="0"
-                                        Thumb.DragStarted="SeekSlider_DragStarted" 
-                                        Thumb.DragCompleted="SeekSlider_DragCompleted" 
-                                        ValueChanged="SeekSlider_ValueChanged"
-                                        PreviewMouseLeftButtonUp="SeekSlider_PreviewMouseLeftButtonUp"/>
-                            </Grid>
+                            <Slider x:Name="SeekSlider" Grid.Column="1" Style="{StaticResource VolumeSlider}" VerticalAlignment="Center"
+                                    Thumb.DragStarted="SeekSlider_DragStarted" 
+                                    Thumb.DragCompleted="SeekSlider_DragCompleted" 
+                                    ValueChanged="SeekSlider_ValueChanged"
+                                    PreviewMouseLeftButtonUp="SeekSlider_PreviewMouseLeftButtonUp"/>
 
                             <TextBlock x:Name="TotalTimeText" Text="0:00" Grid.Column="2" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" VerticalAlignment="Center" Margin="8,0,0,0"/>
                         </Grid>

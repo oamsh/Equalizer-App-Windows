@@ -119,6 +119,7 @@ namespace EqualizerPro
             InitializeComponent();
 
             if (SeekSlider != null) SeekSlider.IsMoveToPointEnabled = true;
+            if (PlaybackBigSeekSlider != null) PlaybackBigSeekSlider.IsMoveToPointEnabled = true;
             if (VolumeSliderControl != null) VolumeSliderControl.IsMoveToPointEnabled = true;
             if (SpectrumFalloffSlider != null) SpectrumFalloffSlider.IsMoveToPointEnabled = true;
 
@@ -141,7 +142,6 @@ namespace EqualizerPro
             for (int i = 0; i < 48; i++) _spectrumCurrents[i] = 2;
 
             Loaded += MainWindow_Loaded;
-            SizeChanged += MainWindow_SizeChanged;
             InitializeSystemTray();
         }
 
@@ -176,11 +176,6 @@ namespace EqualizerPro
             _isLoadingSettings = false;
         }
 
-        private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            UpdateWaveformMask();
-        }
-
         // ==========================================
         // UI Navigation & Compact Mode Logic
         // ==========================================
@@ -195,6 +190,7 @@ namespace EqualizerPro
                 SidebarBorder.Visibility = Visibility.Collapsed;
                 EqContentPanel.Visibility = Visibility.Collapsed;
                 if (FxContentPanel != null) FxContentPanel.Visibility = Visibility.Collapsed;
+                if (PlaybackContentPanel != null) PlaybackContentPanel.Visibility = Visibility.Collapsed;
                 SettingsContentPanel.Visibility = Visibility.Collapsed;
                 if (AppTitleText != null) AppTitleText.Visibility = Visibility.Collapsed;
 
@@ -226,6 +222,7 @@ namespace EqualizerPro
                 if (_activePanel == 0) EqContentPanel.Visibility = Visibility.Visible;
                 else if (_activePanel == 1 && FxContentPanel != null) FxContentPanel.Visibility = Visibility.Visible;
                 else if (_activePanel == 2) SettingsContentPanel.Visibility = Visibility.Visible;
+                else if (_activePanel == 3 && PlaybackContentPanel != null) PlaybackContentPanel.Visibility = Visibility.Visible;
 
                 DoubleAnimation widthAnim = new DoubleAnimation(this.ActualWidth, 1100, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
                 DoubleAnimation heightAnim = new DoubleAnimation(this.ActualHeight, 768, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
@@ -238,7 +235,7 @@ namespace EqualizerPro
         private void EqualizerBtn_Click(object sender, RoutedEventArgs e)
         {
             _activePanel = 0;
-            if (NavEqActive == null || NavSettingsActive == null || NavFxActive == null) return;
+            if (NavEqActive == null || NavSettingsActive == null || NavFxActive == null || NavPlaybackActive == null) return;
 
             NavEqActive.Visibility = Visibility.Visible;
             NavEqBtn.Visibility = Visibility.Collapsed;
@@ -246,11 +243,15 @@ namespace EqualizerPro
             NavFxActive.Visibility = Visibility.Collapsed;
             NavFxBtn.Visibility = Visibility.Visible;
 
+            NavPlaybackActive.Visibility = Visibility.Collapsed;
+            NavPlaybackBtn.Visibility = Visibility.Visible;
+
             NavSettingsActive.Visibility = Visibility.Collapsed;
             NavSettingsBtn.Visibility = Visibility.Visible;
 
             SettingsContentPanel.Visibility = Visibility.Collapsed;
             if (FxContentPanel != null) FxContentPanel.Visibility = Visibility.Collapsed;
+            if (PlaybackContentPanel != null) PlaybackContentPanel.Visibility = Visibility.Collapsed;
             EqContentPanel.Visibility = Visibility.Visible;
 
             var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250));
@@ -260,29 +261,33 @@ namespace EqualizerPro
         private void FxBtn_Click(object sender, RoutedEventArgs e)
         {
             _activePanel = 1;
-            if (NavEqActive == null || NavSettingsActive == null || NavFxActive == null) return;
+            if (NavEqActive == null || NavSettingsActive == null || NavFxActive == null || NavPlaybackActive == null) return;
 
             NavEqActive.Visibility = Visibility.Collapsed;
             NavEqBtn.Visibility = Visibility.Visible;
 
-            NavSettingsActive.Visibility = Visibility.Collapsed;
-            NavSettingsBtn.Visibility = Visibility.Visible;
-
             NavFxActive.Visibility = Visibility.Visible;
             NavFxBtn.Visibility = Visibility.Collapsed;
 
+            NavPlaybackActive.Visibility = Visibility.Collapsed;
+            NavPlaybackBtn.Visibility = Visibility.Visible;
+
+            NavSettingsActive.Visibility = Visibility.Collapsed;
+            NavSettingsBtn.Visibility = Visibility.Visible;
+
             EqContentPanel.Visibility = Visibility.Collapsed;
             SettingsContentPanel.Visibility = Visibility.Collapsed;
+            if (PlaybackContentPanel != null) PlaybackContentPanel.Visibility = Visibility.Collapsed;
             if (FxContentPanel != null) FxContentPanel.Visibility = Visibility.Visible;
 
             var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250));
             FxContentPanel?.BeginAnimation(UIElement.OpacityProperty, fadeIn);
         }
 
-        private void SettingsBtn_Click(object sender, RoutedEventArgs e)
+        private void PlaybackNavBtn_Click(object sender, RoutedEventArgs e)
         {
-            _activePanel = 2;
-            if (NavEqActive == null || NavSettingsActive == null || NavFxActive == null) return;
+            _activePanel = 3;
+            if (NavEqActive == null || NavSettingsActive == null || NavFxActive == null || NavPlaybackActive == null) return;
 
             NavEqActive.Visibility = Visibility.Collapsed;
             NavEqBtn.Visibility = Visibility.Visible;
@@ -290,11 +295,41 @@ namespace EqualizerPro
             NavFxActive.Visibility = Visibility.Collapsed;
             NavFxBtn.Visibility = Visibility.Visible;
 
+            NavPlaybackActive.Visibility = Visibility.Visible;
+            NavPlaybackBtn.Visibility = Visibility.Collapsed;
+
+            NavSettingsActive.Visibility = Visibility.Collapsed;
+            NavSettingsBtn.Visibility = Visibility.Visible;
+
+            EqContentPanel.Visibility = Visibility.Collapsed;
+            if (FxContentPanel != null) FxContentPanel.Visibility = Visibility.Collapsed;
+            SettingsContentPanel.Visibility = Visibility.Collapsed;
+            if (PlaybackContentPanel != null) PlaybackContentPanel.Visibility = Visibility.Visible;
+
+            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250));
+            PlaybackContentPanel?.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+        }
+
+        private void SettingsBtn_Click(object sender, RoutedEventArgs e)
+        {
+            _activePanel = 2;
+            if (NavEqActive == null || NavSettingsActive == null || NavFxActive == null || NavPlaybackActive == null) return;
+
+            NavEqActive.Visibility = Visibility.Collapsed;
+            NavEqBtn.Visibility = Visibility.Visible;
+
+            NavFxActive.Visibility = Visibility.Collapsed;
+            NavFxBtn.Visibility = Visibility.Visible;
+
+            NavPlaybackActive.Visibility = Visibility.Collapsed;
+            NavPlaybackBtn.Visibility = Visibility.Visible;
+
             NavSettingsActive.Visibility = Visibility.Visible;
             NavSettingsBtn.Visibility = Visibility.Collapsed;
 
             EqContentPanel.Visibility = Visibility.Collapsed;
             if (FxContentPanel != null) FxContentPanel.Visibility = Visibility.Collapsed;
+            if (PlaybackContentPanel != null) PlaybackContentPanel.Visibility = Visibility.Collapsed;
             SettingsContentPanel.Visibility = Visibility.Visible;
 
             var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250));
@@ -973,53 +1008,6 @@ namespace EqualizerPro
             catch { }
         }
 
-        // ==========================================
-        // Faux Waveform Engine
-        // ==========================================
-        private Geometry GenerateWaveformGeometry(string seedStr)
-        {
-            int seed = seedStr != null ? seedStr.GetHashCode() : 0;
-            Random rnd = new Random(seed);
-            GeometryGroup group = new GeometryGroup();
-
-            int numBars = 100;
-            double width = 1000;
-            double maxH = 40;
-            double barWidth = width / numBars;
-            double gap = barWidth * 0.4;
-
-            for (int i = 0; i < numBars; i++)
-            {
-                double h = maxH * (0.1 + rnd.NextDouble() * 0.9);
-                double envelope = Math.Sin((i / (double)numBars) * Math.PI);
-                h = h * (0.4 + 0.6 * envelope);
-
-                double x = i * barWidth;
-                double y = (maxH - h) / 2;
-
-                group.Children.Add(new RectangleGeometry(new Rect(x, y, barWidth - gap, h), 2, 2));
-            }
-            return group;
-        }
-
-        private void UpdateWaveformMask()
-        {
-            if (WaveformPlayedMask != null && SeekSlider != null && SeekSlider.Maximum > 0)
-            {
-                double percent = SeekSlider.Value / SeekSlider.Maximum;
-                if (double.IsNaN(percent) || double.IsInfinity(percent)) percent = 0;
-
-                double newWidth = percent * SeekSlider.ActualWidth;
-                if (double.IsNaN(newWidth) || double.IsInfinity(newWidth) || newWidth < 0) newWidth = 0;
-
-                // Fix for CS1061: Use the Rect property to set the width and height of the mask
-                WaveformPlayedMask.Rect = new Rect(0, 0, newWidth, 20);
-            }
-        }
-
-        // ==========================================
-        // Wave Transition Engine
-        // ==========================================
         private void TriggerWaveTransition(Point origin, Action themeChangeAction)
         {
             if (WindowBorder == null || ThemeTransitionOverlay == null) return;
@@ -1433,6 +1421,11 @@ namespace EqualizerPro
                     EqRightDbText.Text = rightDbVal <= -59.0 ? "-inf" : rightDbVal.ToString("0.0");
                 }
             }
+
+            if (isPlayingState && DiskRotation != null)
+            {
+                DiskRotation.Angle = (DiskRotation.Angle + 0.5) % 360;
+            }
         }
 
         private void DrawFrequencyGraph()
@@ -1515,16 +1508,20 @@ namespace EqualizerPro
                     TrackImageBrush.ImageSource = null;
                     TrackIcon.Visibility = Visibility.Visible;
 
+                    if (PlaybackBigImageBrush != null) PlaybackBigImageBrush.ImageSource = null;
+
                     CurrentTimeText.Text = "0:00";
                     TotalTimeText.Text = "0:00";
                     SeekSlider.Value = 0;
 
-                    // Clear faux waveform
-                    if (WaveformPathUnplayed != null) WaveformPathUnplayed.Data = null;
-                    if (WaveformPathPlayed != null) WaveformPathPlayed.Data = null;
-
                     PlayPauseIcon.Data = Geometry.Parse(PlayIconData);
                     PlayPauseIcon.Margin = new Thickness(3, 0, 0, 0);
+
+                    if (PlaybackBigPlayPauseIcon != null)
+                    {
+                        PlaybackBigPlayPauseIcon.Data = Geometry.Parse(PlayIconData);
+                        PlaybackBigPlayPauseIcon.Margin = new Thickness(5, 0, 0, 0);
+                    }
                 });
             }
         }
@@ -1568,20 +1565,17 @@ namespace EqualizerPro
                         TrackTitle.Text = title;
                         TrackArtist.Text = artist;
 
-                        // Generate the unique faux-waveform seeded by the track title
-                        Geometry wave = GenerateWaveformGeometry(title);
-                        if (WaveformPathUnplayed != null) WaveformPathUnplayed.Data = wave;
-                        if (WaveformPathPlayed != null) WaveformPathPlayed.Data = wave;
-
                         if (bitmapImage != null)
                         {
                             TrackImageBrush.ImageSource = bitmapImage;
                             TrackIcon.Visibility = Visibility.Collapsed;
+                            if (PlaybackBigImageBrush != null) PlaybackBigImageBrush.ImageSource = bitmapImage;
                         }
                         else
                         {
                             TrackImageBrush.ImageSource = null;
                             TrackIcon.Visibility = Visibility.Visible;
+                            if (PlaybackBigImageBrush != null) PlaybackBigImageBrush.ImageSource = null;
                         }
                     });
                 }
@@ -1601,11 +1595,23 @@ namespace EqualizerPro
                     {
                         PlayPauseIcon.Data = Geometry.Parse(PauseIconData);
                         PlayPauseIcon.Margin = new Thickness(0);
+
+                        if (PlaybackBigPlayPauseIcon != null)
+                        {
+                            PlaybackBigPlayPauseIcon.Data = Geometry.Parse(PauseIconData);
+                            PlaybackBigPlayPauseIcon.Margin = new Thickness(0);
+                        }
                     }
                     else
                     {
                         PlayPauseIcon.Data = Geometry.Parse(PlayIconData);
                         PlayPauseIcon.Margin = new Thickness(3, 0, 0, 0);
+
+                        if (PlaybackBigPlayPauseIcon != null)
+                        {
+                            PlaybackBigPlayPauseIcon.Data = Geometry.Parse(PlayIconData);
+                            PlaybackBigPlayPauseIcon.Margin = new Thickness(5, 0, 0, 0);
+                        }
                     }
                 });
             }
@@ -1638,8 +1644,6 @@ namespace EqualizerPro
 
                     CurrentTimeText.Text = string.Format("{0}:{1:D2}", Math.Floor(currentPosition.TotalMinutes), currentPosition.Seconds);
                     TotalTimeText.Text = string.Format("{0}:{1:D2}", Math.Floor(timeline.EndTime.TotalMinutes), timeline.EndTime.Seconds);
-
-                    UpdateWaveformMask();
                 });
             }
         }
@@ -1656,6 +1660,16 @@ namespace EqualizerPro
                 };
                 scaleTransform.BeginAnimation(ScaleTransform.ScaleXProperty, popAnim);
                 scaleTransform.BeginAnimation(ScaleTransform.ScaleYProperty, popAnim);
+            }
+
+            if (PlaybackBigPlayPauseBorder != null && PlaybackBigPlayPauseBorder.RenderTransform is ScaleTransform bigScaleTransform)
+            {
+                var popAnim = new DoubleAnimation(0.8, 1.0, TimeSpan.FromMilliseconds(400))
+                {
+                    EasingFunction = new ElasticEase { Oscillations = 1, Springiness = 5, EasingMode = EasingMode.EaseOut }
+                };
+                bigScaleTransform.BeginAnimation(ScaleTransform.ScaleXProperty, popAnim);
+                bigScaleTransform.BeginAnimation(ScaleTransform.ScaleYProperty, popAnim);
             }
 
             if (_currentSession != null)
@@ -1690,7 +1704,6 @@ namespace EqualizerPro
 
         private void SeekSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            UpdateWaveformMask();
             if (_isDraggingSeekbar)
             {
                 var tempPosition = TimeSpan.FromSeconds(SeekSlider.Value);
@@ -1702,10 +1715,15 @@ namespace EqualizerPro
         {
             if (_currentSession != null && !_isDraggingSeekbar)
             {
-                var newPosition = TimeSpan.FromSeconds(SeekSlider.Value);
-                await _currentSession.TryChangePlaybackPositionAsync(newPosition.Ticks);
+                // Determine which slider was clicked
+                Slider clickedSlider = sender as Slider;
+                if (clickedSlider != null)
+                {
+                    var newPosition = TimeSpan.FromSeconds(clickedSlider.Value);
+                    await _currentSession.TryChangePlaybackPositionAsync(newPosition.Ticks);
 
-                CurrentTimeText.Text = string.Format("{0}:{1:D2}", Math.Floor(newPosition.TotalMinutes), newPosition.Seconds);
+                    CurrentTimeText.Text = string.Format("{0}:{1:D2}", Math.Floor(newPosition.TotalMinutes), newPosition.Seconds);
+                }
             }
         }
 
