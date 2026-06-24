@@ -62,6 +62,9 @@ namespace EqualizerPro
         private TimeSpan _recordDuration;
         private bool _isRecording = false;
 
+        // Text Marquee / Scrolling Variables
+        private DispatcherTimer _marqueeTimer;
+
         // Equalizer Variables
         private Slider[] _eqSliders;
         private Dictionary<string, double[]> _eqPresets = new Dictionary<string, double[]>();
@@ -137,6 +140,11 @@ namespace EqualizerPro
             _recordTimer = new DispatcherTimer();
             _recordTimer.Interval = TimeSpan.FromSeconds(1);
             _recordTimer.Tick += RecordTimer_Tick;
+
+            _marqueeTimer = new DispatcherTimer();
+            _marqueeTimer.Interval = TimeSpan.FromMilliseconds(40);
+            _marqueeTimer.Tick += MarqueeTimer_Tick;
+            _marqueeTimer.Start();
 
             for (int i = 0; i < 10; i++) _freqCurrents[i] = 50;
             for (int i = 0; i < 48; i++) _spectrumCurrents[i] = 2;
@@ -1418,7 +1426,7 @@ namespace EqualizerPro
                     double rightDbVal = _rightDbCurrent > 0.001 ? 20 * Math.Log10(_rightDbCurrent) : -60.0;
 
                     EqLeftDbText.Text = leftDbVal <= -59.0 ? "-inf" : leftDbVal.ToString("0.0");
-                    EqRightDbText.Text = rightDbVal <= -59.0 ? "-inf" : rightDbVal.ToString("0.0");
+                    KeepTextCentered(leftDbVal, rightDbVal);
                 }
             }
 
@@ -1426,6 +1434,12 @@ namespace EqualizerPro
             {
                 DiskRotation.Angle = (DiskRotation.Angle + 0.5) % 360;
             }
+        }
+
+        private void KeepTextCentered(double l, double r)
+        {
+            EqLeftDbText.Text = l <= -59.0 ? "-inf" : l.ToString("0.0");
+            EqRightDbText.Text = r <= -59.0 ? "-inf" : r.ToString("0.0");
         }
 
         private void DrawFrequencyGraph()
@@ -1715,7 +1729,6 @@ namespace EqualizerPro
         {
             if (_currentSession != null && !_isDraggingSeekbar)
             {
-                // Determine which slider was clicked
                 Slider clickedSlider = sender as Slider;
                 if (clickedSlider != null)
                 {
@@ -1771,6 +1784,32 @@ namespace EqualizerPro
             var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(150));
             fadeOut.Completed += (s, ev) => AboutOverlay.Visibility = Visibility.Collapsed;
             AboutOverlay.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+        }
+
+        // ==========================================
+        // Text Marquee / Scrolling Logic
+        // ==========================================
+        private void MarqueeTimer_Tick(object sender, EventArgs e)
+        {
+            ScrollText(TrackTitleScroller);
+            ScrollText(TrackArtistScroller);
+            ScrollText(PlaybackBigTitleScroller);
+            ScrollText(PlaybackBigArtistScroller);
+        }
+
+        private void ScrollText(ScrollViewer scroller)
+        {
+            if (scroller != null && scroller.ScrollableWidth > 0)
+            {
+                if (scroller.HorizontalOffset >= scroller.ScrollableWidth)
+                {
+                    scroller.ScrollToHorizontalOffset(0);
+                }
+                else
+                {
+                    scroller.ScrollToHorizontalOffset(scroller.HorizontalOffset + 1.0);
+                }
+            }
         }
     }
 
