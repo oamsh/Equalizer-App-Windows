@@ -1123,9 +1123,6 @@
                             </Grid>
 
                             <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,20,0,0">
-                                <Button Style="{StaticResource DarkButton}" BorderThickness="0" Width="40" Height="40" Margin="0,0,20,0">
-                                    <Path Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.5" Stretch="Uniform" Width="16" Height="16" Data="M2,10 L5,7 M9,3 L13,3 L13,7 M13,3 L9,7 M2,2 L13,13 M9,13 L13,13 L13,9"/>
-                                </Button>
 
                                 <Button x:Name="PlaybackBigPrevBtn" Style="{StaticResource DarkButton}" BorderThickness="0" Width="50" Height="50" Margin="0,0,20,0" Click="Previous_Click">
                                     <Path Fill="{DynamicResource TextBrush}" Stretch="Uniform" Width="16" Height="16" Data="M10,2 L10,14 L3,8 Z M2,2 L3,2 L3,14 L2,14 Z"/>
@@ -1142,9 +1139,6 @@
                                     <Path Fill="{DynamicResource TextBrush}" Stretch="Uniform" Width="16" Height="16" Data="M2,2 L2,14 L9,8 Z M10,2 L11,2 L11,14 L10,14 Z"/>
                                 </Button>
 
-                                <Button Style="{StaticResource DarkButton}" BorderThickness="0" Width="40" Height="40">
-                                    <Path Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.5" Fill="Transparent" Stretch="Uniform" Width="16" Height="16" Data="M4,4 L12,4 A4,4 0 0,1 12,12 L4,12 A4,4 0 0,1 4,4 M10,2 L12,4 L10,6 M6,14 L4,12 L6,10"/>
-                                </Button>
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -1204,9 +1198,6 @@
                             </StackPanel>
 
                             <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <Button Style="{StaticResource DarkButton}" BorderThickness="0" Margin="0,0,15,0" Width="35" Height="35">
-                                    <Path Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.5" Stretch="Uniform" Width="14" Height="14" Data="M2,10 L5,7 M9,3 L13,3 L13,7 M13,3 L9,7 M2,2 L13,13 M9,13 L13,13 L13,9"/>
-                                </Button>
                                 <Button Click="Previous_Click" Style="{StaticResource DarkButton}" BorderThickness="0" Margin="0,0,15,0" Width="35" Height="35">
                                     <Path Fill="{DynamicResource MutedTextBrush}" Stretch="Uniform" Width="12" Height="12" Data="M10,2 L10,14 L3,8 Z M2,2 L3,2 L3,14 L2,14 Z"/>
                                 </Button>
@@ -1223,9 +1214,6 @@
 
                                 <Button Click="Next_Click" Style="{StaticResource DarkButton}" BorderThickness="0" Margin="15,0,0,0" Width="35" Height="35">
                                     <Path Fill="{DynamicResource MutedTextBrush}" Stretch="Uniform" Width="12" Height="12" Data="M2,2 L2,14 L9,8 Z M10,2 L11,2 L11,14 L10,14 Z"/>
-                                </Button>
-                                <Button Style="{StaticResource DarkButton}" BorderThickness="0" Margin="15,0,0,0" Width="35" Height="35">
-                                    <Path Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.5" Fill="Transparent" Stretch="Uniform" Width="14" Height="14" Data="M4,4 L12,4 A4,4 0 0,1 12,12 L4,12 A4,4 0 0,1 4,4 M10,2 L12,4 L10,6 M6,14 L4,12 L6,10"/>
                                 </Button>
                             </StackPanel>
 
