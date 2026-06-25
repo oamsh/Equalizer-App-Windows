@@ -162,6 +162,20 @@ namespace EqualizerPro
 
             try
             {
+                SystemVolumeManager.Initialize();
+                SystemVolumeManager.OnVolumeChanged += (newVolume) =>
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        _isUpdatingVolumeUI = true;
+                        if (VolumeSliderControl != null)
+                        {
+                            VolumeSliderControl.Value = newVolume * 100.0;
+                        }
+                        _isUpdatingVolumeUI = false;
+                    });
+                };
+
                 _isUpdatingVolumeUI = true;
                 if (VolumeSliderControl != null) VolumeSliderControl.Value = SystemVolumeManager.GetVolume();
                 _isUpdatingVolumeUI = false;
@@ -1769,24 +1783,33 @@ namespace EqualizerPro
 
     public static class SystemVolumeManager
     {
-        public static MMDevice? GetDefaultDevice()
+        private static MMDevice? _defaultDevice;
+        public static event Action<float>? OnVolumeChanged;
+
+        public static void Initialize()
         {
             try
             {
-                var enumerator = new NAudio.CoreAudioApi.MMDeviceEnumerator();
-                return enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+                var enumerator = new MMDeviceEnumerator();
+                _defaultDevice = enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+                if (_defaultDevice != null)
+                {
+                    _defaultDevice.AudioEndpointVolume.OnVolumeNotification += (data) =>
+                    {
+                        OnVolumeChanged?.Invoke(data.MasterVolume);
+                    };
+                }
             }
-            catch { return null; }
+            catch { }
         }
 
         public static float GetPeakValue()
         {
             try
             {
-                var device = GetDefaultDevice();
-                if (device != null)
+                if (_defaultDevice != null)
                 {
-                    return device.AudioMeterInformation.MasterPeakValue;
+                    return _defaultDevice.AudioMeterInformation.MasterPeakValue;
                 }
             }
             catch { }
@@ -1797,10 +1820,9 @@ namespace EqualizerPro
         {
             try
             {
-                var device = GetDefaultDevice();
-                if (device != null)
+                if (_defaultDevice != null)
                 {
-                    device.AudioEndpointVolume.MasterVolumeLevelScalar = (float)(volumeLevel / 100.0);
+                    _defaultDevice.AudioEndpointVolume.MasterVolumeLevelScalar = (float)(volumeLevel / 100.0);
                 }
             }
             catch { }
@@ -1810,10 +1832,9 @@ namespace EqualizerPro
         {
             try
             {
-                var device = GetDefaultDevice();
-                if (device != null)
+                if (_defaultDevice != null)
                 {
-                    return device.AudioEndpointVolume.MasterVolumeLevelScalar * 100.0;
+                    return _defaultDevice.AudioEndpointVolume.MasterVolumeLevelScalar * 100.0;
                 }
             }
             catch { }
