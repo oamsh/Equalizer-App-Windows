@@ -121,7 +121,9 @@ namespace EqualizerPro
 
             if (SeekSlider != null) SeekSlider.IsMoveToPointEnabled = true;
             if (PlaybackBigSeekSlider != null) PlaybackBigSeekSlider.IsMoveToPointEnabled = true;
+            if (CompactSeekSlider != null) CompactSeekSlider.IsMoveToPointEnabled = true;
             if (VolumeSliderControl != null) VolumeSliderControl.IsMoveToPointEnabled = true;
+            if (CompactVolumeSlider != null) CompactVolumeSlider.IsMoveToPointEnabled = true;
             if (SpectrumFalloffSlider != null) SpectrumFalloffSlider.IsMoveToPointEnabled = true;
 
             _eqSliders = new Slider[] { Slider1, Slider2, Slider3, Slider4, Slider5, Slider6, Slider7, Slider8, Slider9, Slider10 };
@@ -168,16 +170,16 @@ namespace EqualizerPro
                     Dispatcher.Invoke(() =>
                     {
                         _isUpdatingVolumeUI = true;
-                        if (VolumeSliderControl != null)
-                        {
-                            VolumeSliderControl.Value = newVolume * 100.0;
-                        }
+                        if (VolumeSliderControl != null) VolumeSliderControl.Value = newVolume * 100.0;
+                        if (CompactVolumeSlider != null) CompactVolumeSlider.Value = newVolume * 100.0;
                         _isUpdatingVolumeUI = false;
                     });
                 };
 
                 _isUpdatingVolumeUI = true;
-                if (VolumeSliderControl != null) VolumeSliderControl.Value = SystemVolumeManager.GetVolume();
+                double currentVolume = SystemVolumeManager.GetVolume();
+                if (VolumeSliderControl != null) VolumeSliderControl.Value = currentVolume;
+                if (CompactVolumeSlider != null) CompactVolumeSlider.Value = currentVolume;
                 _isUpdatingVolumeUI = false;
 
                 _sessionManager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
@@ -215,13 +217,10 @@ namespace EqualizerPro
                 if (BottomPlaybackBarBorder != null) BottomPlaybackBarBorder.Visibility = Visibility.Collapsed;
 
                 if (CompactEqToggle != null) CompactEqToggle.Visibility = Visibility.Visible;
+                if (CompactPlaybackPanel != null) CompactPlaybackPanel.Visibility = Visibility.Visible;
 
-                if (TrackTitle != null) { TrackTitle.MaxWidth = 85; TrackTitle.TextTrimming = TextTrimming.CharacterEllipsis; }
-                if (TrackArtist != null) { TrackArtist.MaxWidth = 85; TrackArtist.TextTrimming = TextTrimming.CharacterEllipsis; }
-                if (VolumeSliderControl != null) VolumeSliderControl.Width = 60;
-
-                DoubleAnimation widthAnim = new DoubleAnimation(this.ActualWidth, 600, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
-                DoubleAnimation heightAnim = new DoubleAnimation(this.ActualHeight, 180, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
+                DoubleAnimation widthAnim = new DoubleAnimation(this.ActualWidth, 650, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
+                DoubleAnimation heightAnim = new DoubleAnimation(this.ActualHeight, 220, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
 
                 this.BeginAnimation(Window.WidthProperty, widthAnim);
                 this.BeginAnimation(Window.HeightProperty, heightAnim);
@@ -231,13 +230,10 @@ namespace EqualizerPro
                 CompactModeBtn.Content = "🗗";
 
                 if (CompactEqToggle != null) CompactEqToggle.Visibility = Visibility.Collapsed;
+                if (CompactPlaybackPanel != null) CompactPlaybackPanel.Visibility = Visibility.Collapsed;
 
                 SidebarBorder.Visibility = Visibility.Visible;
                 if (AppTitleText != null) AppTitleText.Visibility = Visibility.Visible;
-
-                if (TrackTitle != null) TrackTitle.MaxWidth = Double.PositiveInfinity;
-                if (TrackArtist != null) TrackArtist.MaxWidth = Double.PositiveInfinity;
-                if (VolumeSliderControl != null) VolumeSliderControl.Width = 110;
 
                 if (_activePanel == 0) EqContentPanel.Visibility = Visibility.Visible;
                 else if (_activePanel == 2) SettingsContentPanel.Visibility = Visibility.Visible;
@@ -875,7 +871,13 @@ namespace EqualizerPro
         {
             if (!_isUpdatingVolumeUI && IsLoaded)
             {
-                SystemVolumeManager.SetVolume(VolumeSliderControl.Value);
+                _isUpdatingVolumeUI = true;
+                SystemVolumeManager.SetVolume(e.NewValue);
+
+                if (sender == VolumeSliderControl && CompactVolumeSlider != null) CompactVolumeSlider.Value = e.NewValue;
+                if (sender == CompactVolumeSlider && VolumeSliderControl != null) VolumeSliderControl.Value = e.NewValue;
+
+                _isUpdatingVolumeUI = false;
             }
         }
 
@@ -1481,9 +1483,13 @@ namespace EqualizerPro
 
                     if (PlaybackBigImageBrush != null) PlaybackBigImageBrush.ImageSource = null;
 
+                    if (CompactTrackImageBrush != null) CompactTrackImageBrush.ImageSource = null;
+                    if (CompactTrackIcon != null) CompactTrackIcon.Visibility = Visibility.Visible;
+
                     if (CurrentTimeText != null) CurrentTimeText.Text = "0:00";
                     if (TotalTimeText != null) TotalTimeText.Text = "0:00";
                     if (SeekSlider != null) SeekSlider.Value = 0;
+                    if (CompactSeekSlider != null) CompactSeekSlider.Value = 0;
 
                     if (PlayPauseIcon != null)
                     {
@@ -1495,6 +1501,12 @@ namespace EqualizerPro
                     {
                         PlaybackBigPlayPauseIcon.Data = Geometry.Parse(PlayIconData);
                         PlaybackBigPlayPauseIcon.Margin = new Thickness(5, 0, 0, 0);
+                    }
+
+                    if (CompactPlayPauseIcon != null)
+                    {
+                        CompactPlayPauseIcon.Data = Geometry.Parse(PlayIconData);
+                        CompactPlayPauseIcon.Margin = new Thickness(3, 0, 0, 0);
                     }
                 });
             }
@@ -1543,13 +1555,21 @@ namespace EqualizerPro
                         {
                             if (TrackImageBrush != null) TrackImageBrush.ImageSource = bitmapImage;
                             if (TrackIcon != null) TrackIcon.Visibility = Visibility.Collapsed;
+
                             if (PlaybackBigImageBrush != null) PlaybackBigImageBrush.ImageSource = bitmapImage;
+
+                            if (CompactTrackImageBrush != null) CompactTrackImageBrush.ImageSource = bitmapImage;
+                            if (CompactTrackIcon != null) CompactTrackIcon.Visibility = Visibility.Collapsed;
                         }
                         else
                         {
                             if (TrackImageBrush != null) TrackImageBrush.ImageSource = null;
                             if (TrackIcon != null) TrackIcon.Visibility = Visibility.Visible;
+
                             if (PlaybackBigImageBrush != null) PlaybackBigImageBrush.ImageSource = null;
+
+                            if (CompactTrackImageBrush != null) CompactTrackImageBrush.ImageSource = null;
+                            if (CompactTrackIcon != null) CompactTrackIcon.Visibility = Visibility.Visible;
                         }
                     });
                 }
@@ -1578,6 +1598,12 @@ namespace EqualizerPro
                             PlaybackBigPlayPauseIcon.Data = Geometry.Parse(PauseIconData);
                             PlaybackBigPlayPauseIcon.Margin = new Thickness(0);
                         }
+
+                        if (CompactPlayPauseIcon != null)
+                        {
+                            CompactPlayPauseIcon.Data = Geometry.Parse(PauseIconData);
+                            CompactPlayPauseIcon.Margin = new Thickness(0);
+                        }
                     }
                     else
                     {
@@ -1591,6 +1617,12 @@ namespace EqualizerPro
                         {
                             PlaybackBigPlayPauseIcon.Data = Geometry.Parse(PlayIconData);
                             PlaybackBigPlayPauseIcon.Margin = new Thickness(5, 0, 0, 0);
+                        }
+
+                        if (CompactPlayPauseIcon != null)
+                        {
+                            CompactPlayPauseIcon.Data = Geometry.Parse(PlayIconData);
+                            CompactPlayPauseIcon.Margin = new Thickness(3, 0, 0, 0);
                         }
                     }
                 });
@@ -1625,6 +1657,12 @@ namespace EqualizerPro
                         SeekSlider.Value = currentPosition.TotalSeconds;
                     }
 
+                    if (CompactSeekSlider != null)
+                    {
+                        CompactSeekSlider.Maximum = timeline.EndTime.TotalSeconds;
+                        CompactSeekSlider.Value = currentPosition.TotalSeconds;
+                    }
+
                     if (CurrentTimeText != null) CurrentTimeText.Text = string.Format("{0}:{1:D2}", Math.Floor(currentPosition.TotalMinutes), currentPosition.Seconds);
                     if (TotalTimeText != null) TotalTimeText.Text = string.Format("{0}:{1:D2}", Math.Floor(timeline.EndTime.TotalMinutes), timeline.EndTime.Seconds);
                 });
@@ -1655,6 +1693,16 @@ namespace EqualizerPro
                 bigScaleTransform.BeginAnimation(ScaleTransform.ScaleYProperty, popAnim);
             }
 
+            if (CompactPlayPauseBorder != null && CompactPlayPauseBorder.RenderTransform is ScaleTransform compactScaleTransform)
+            {
+                var popAnim = new DoubleAnimation(0.8, 1.0, TimeSpan.FromMilliseconds(400))
+                {
+                    EasingFunction = new ElasticEase { Oscillations = 1, Springiness = 5, EasingMode = EasingMode.EaseOut }
+                };
+                compactScaleTransform.BeginAnimation(ScaleTransform.ScaleXProperty, popAnim);
+                compactScaleTransform.BeginAnimation(ScaleTransform.ScaleYProperty, popAnim);
+            }
+
             if (_currentSession != null)
             {
                 await _currentSession.TryTogglePlayPauseAsync();
@@ -1679,7 +1727,7 @@ namespace EqualizerPro
         {
             if (_currentSession != null && SeekSlider != null)
             {
-                var newPosition = TimeSpan.FromSeconds(SeekSlider.Value);
+                var newPosition = TimeSpan.FromSeconds(((Slider)sender).Value);
                 await _currentSession.TryChangePlaybackPositionAsync(newPosition.Ticks);
             }
             _isDraggingSeekbar = false;
@@ -1687,9 +1735,9 @@ namespace EqualizerPro
 
         private void SeekSlider_ValueChanged(object? sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            if (_isDraggingSeekbar && SeekSlider != null && CurrentTimeText != null)
+            if (_isDraggingSeekbar && CurrentTimeText != null)
             {
-                var tempPosition = TimeSpan.FromSeconds(SeekSlider.Value);
+                var tempPosition = TimeSpan.FromSeconds(e.NewValue);
                 CurrentTimeText.Text = string.Format("{0}:{1:D2}", Math.Floor(tempPosition.TotalMinutes), tempPosition.Seconds);
             }
         }

@@ -351,7 +351,7 @@
                         <ToggleButton x:Name="CompactEqToggle" Style="{StaticResource ToggleSwitchStyle}" IsChecked="True" Visibility="Collapsed" Click="CompactEqToggle_Click" Margin="0,0,20,0" ToolTip="Enable/Disable Equalizer"/>
 
                         <TextBlock Text="Theme:" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="12"/>
-                        <ComboBox x:Name="ThemeSelector" Width="120" Height="26" SelectedIndex="0" Style="{StaticResource DarkComboBox}" Margin="0,0,10,0" SelectionChanged="ThemeSelector_ThemeChanged">
+                        <ComboBox x:Name="ThemeSelector" Width="120" Height="26" SelectedIndex="0" Style="{StaticResource DarkComboBox}" Margin="0,0,10,0" SelectionChanged="ThemeSelector_ThemeChanged" FocusVisualStyle="{x:Null}">
                             <ComboBoxItem Content="Blue (Default)"/>
                             <ComboBoxItem Content="Red"/>
                             <ComboBoxItem Content="Green"/>
@@ -1225,6 +1225,89 @@
                         </Grid>
                     </Grid>
                 </Border>
+
+                <Border x:Name="CompactPlaybackPanel" Grid.Row="1" Grid.RowSpan="2" Style="{StaticResource GlassPanel}" Margin="15,0,15,15" Padding="20" Visibility="Collapsed">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0" Width="120" Height="120" CornerRadius="8" Background="{DynamicResource WindowBgBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,25,0" VerticalAlignment="Center">
+                            <Grid>
+                                <Path x:Name="CompactTrackIcon" Fill="{DynamicResource AccentBrush}" Stretch="Uniform" Width="32" Height="32" Data="M9,3 L19,1 L19,12 A3.5,3.5 0 1,1 15.5,15.5 L15.5,7 L9,8 L9,14 A3.5,3.5 0 1,1 5.5,17.5 L5.5,3 Z" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Border CornerRadius="7">
+                                    <Border.Background>
+                                        <ImageBrush x:Name="CompactTrackImageBrush" Stretch="UniformToFill"/>
+                                    </Border.Background>
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                        <Grid Grid.Column="1" VerticalAlignment="Center">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                                <TextBlock Text="{Binding Text, ElementName=TrackTitle}" Foreground="{DynamicResource TextBrush}" FontWeight="Bold" FontSize="18" TextTrimming="CharacterEllipsis" HorizontalAlignment="Left"/>
+                                <TextBlock Text="{Binding Text, ElementName=TrackArtist}" Foreground="{DynamicResource MutedTextBrush}" FontSize="13" TextTrimming="CharacterEllipsis" HorizontalAlignment="Left" Margin="0,4,0,0"/>
+                            </StackPanel>
+
+                            <Grid Grid.Row="1" Margin="0,0,0,15">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="40"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="40"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{Binding Text, ElementName=CurrentTimeText}" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                                <Slider x:Name="CompactSeekSlider" Grid.Column="1" Style="{StaticResource VolumeSlider}" VerticalAlignment="Center" Margin="5,0"
+                                        Minimum="{Binding Minimum, ElementName=SeekSlider}" Maximum="{Binding Maximum, ElementName=SeekSlider}" Value="{Binding Value, ElementName=SeekSlider}"
+                                        Thumb.DragStarted="SeekSlider_DragStarted"
+                                        Thumb.DragCompleted="SeekSlider_DragCompleted"
+                                        ValueChanged="SeekSlider_ValueChanged"
+                                        PreviewMouseLeftButtonUp="SeekSlider_PreviewMouseLeftButtonUp"/>
+                                <TextBlock Text="{Binding Text, ElementName=TotalTimeText}" Grid.Column="2" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                            </Grid>
+
+                            <Grid Grid.Row="2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                                    <Button Style="{StaticResource DarkButton}" BorderThickness="0" Width="38" Height="38" Margin="0,0,12,0" Click="Previous_Click">
+                                        <Path Fill="{DynamicResource MutedTextBrush}" Stretch="Uniform" Width="13" Height="13" Data="M10,2 L10,14 L3,8 Z M2,2 L3,2 L3,14 L2,14 Z"/>
+                                    </Button>
+
+                                    <Border x:Name="CompactPlayPauseBorder" MouseLeftButtonDown="PlayPause_Click" Cursor="Hand" Width="46" Height="46" Background="{DynamicResource AccentBrush}" CornerRadius="23" Margin="0,0,12,0" RenderTransformOrigin="0.5,0.5">
+                                        <Border.RenderTransform>
+                                            <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                        </Border.RenderTransform>
+                                        <Border.Effect>
+                                            <DropShadowEffect Color="{DynamicResource AccentColor}" BlurRadius="12" ShadowDepth="0"/>
+                                        </Border.Effect>
+                                        <Path x:Name="CompactPlayPauseIcon" Fill="White" Stretch="Uniform" Width="15" Height="15" Margin="3,0,0,0" Data="M2,2 L14,8 L2,14 Z"/>
+                                    </Border>
+
+                                    <Button Style="{StaticResource DarkButton}" BorderThickness="0" Width="38" Height="38" Click="Next_Click">
+                                        <Path Fill="{DynamicResource MutedTextBrush}" Stretch="Uniform" Width="13" Height="13" Data="M2,2 L2,14 L9,8 Z M10,2 L11,2 L11,14 L10,14 Z"/>
+                                    </Button>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                    <Path Fill="{DynamicResource MutedTextBrush}" Stretch="Uniform" Width="14" Height="14" Margin="0,0,10,0" Data="M2,5 L5,5 L9,2 L9,14 L5,11 L2,11 Z M11,4 A5,5 0 0,1 11,12 M13,2 A8,8 0 0,1 13,14"/>
+                                    <Slider x:Name="CompactVolumeSlider" Style="{StaticResource VolumeSlider}" Width="90" Maximum="100" VerticalAlignment="Center" ValueChanged="VolumeSliderControl_ValueChanged"/>
+                                    <TextBlock Text="{Binding Value, ElementName=CompactVolumeSlider, StringFormat={}{0:0}%}" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" VerticalAlignment="Center" Margin="10,0,0,0" Width="30" TextAlignment="Right"/>
+                                </StackPanel>
+                            </Grid>
+                        </Grid>
+                    </Grid>
+                </Border>
+
             </Grid>
         </Border>
 
