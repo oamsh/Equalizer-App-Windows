@@ -23,41 +23,39 @@ using Color = System.Windows.Media.Color;
 using Application = System.Windows.Application;
 using ColorConverter = System.Windows.Media.ColorConverter;
 using MessageBox = System.Windows.MessageBox;
-using SaveFileDialog = Microsoft.Win32.SaveFileDialog;
 using ComboBox = System.Windows.Controls.ComboBox;
 using ComboBoxItem = System.Windows.Controls.ComboBoxItem;
-using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 // -----------------------
 
 namespace EqualizerPro
 {
     public class AudioDeviceInfo
     {
-        public string Id { get; set; }
-        public string Name { get; set; }
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
         public override string ToString() => Name;
     }
 
     public partial class MainWindow : Window
     {
-        private GlobalSystemMediaTransportControlsSessionManager _sessionManager;
-        private GlobalSystemMediaTransportControlsSession _currentSession;
+        private GlobalSystemMediaTransportControlsSessionManager? _sessionManager;
+        private GlobalSystemMediaTransportControlsSession? _currentSession;
         private DispatcherTimer _playbackTimer;
         private bool _isDraggingSeekbar = false;
         private bool _isUpdatingVolumeUI = false;
 
         // UI State Variables
         private bool _isCompactMode = false;
-        private int _activePanel = 0; // 0 = Equalizer, 1 = Studio FX, 2 = Settings
+        private int _activePanel = 0; // 0 = Equalizer, 2 = Settings, 3 = Playback
 
         // System Tray variables
-        private System.Windows.Forms.NotifyIcon _notifyIcon;
+        private System.Windows.Forms.NotifyIcon? _notifyIcon;
         private bool _isForceClosing = false;
 
         // Audio Recording Variables
-        private WasapiLoopbackCapture _loopbackCapture;
-        private WaveFileWriter _waveWriter;
-        private string _tempRecordPath;
+        private WasapiLoopbackCapture? _loopbackCapture;
+        private WaveFileWriter? _waveWriter;
+        private string _tempRecordPath = string.Empty;
         private DispatcherTimer _recordTimer;
         private TimeSpan _recordDuration;
         private bool _isRecording = false;
@@ -153,7 +151,7 @@ namespace EqualizerPro
             InitializeSystemTray();
         }
 
-        private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        private async void MainWindow_Loaded(object? sender, RoutedEventArgs e)
         {
             EnableGlassmorphismBlur();
 
@@ -187,7 +185,7 @@ namespace EqualizerPro
         // ==========================================
         // UI Navigation & Compact Mode Logic
         // ==========================================
-        private void CompactModeBtn_Click(object sender, RoutedEventArgs e)
+        private void CompactModeBtn_Click(object? sender, RoutedEventArgs e)
         {
             _isCompactMode = !_isCompactMode;
 
@@ -197,10 +195,10 @@ namespace EqualizerPro
 
                 SidebarBorder.Visibility = Visibility.Collapsed;
                 EqContentPanel.Visibility = Visibility.Collapsed;
-                if (FxContentPanel != null) FxContentPanel.Visibility = Visibility.Collapsed;
                 if (PlaybackContentPanel != null) PlaybackContentPanel.Visibility = Visibility.Collapsed;
                 SettingsContentPanel.Visibility = Visibility.Collapsed;
                 if (AppTitleText != null) AppTitleText.Visibility = Visibility.Collapsed;
+                if (BottomPlaybackBarBorder != null) BottomPlaybackBarBorder.Visibility = Visibility.Collapsed;
 
                 if (CompactEqToggle != null) CompactEqToggle.Visibility = Visibility.Visible;
 
@@ -228,9 +226,13 @@ namespace EqualizerPro
                 if (VolumeSliderControl != null) VolumeSliderControl.Width = 110;
 
                 if (_activePanel == 0) EqContentPanel.Visibility = Visibility.Visible;
-                else if (_activePanel == 1 && FxContentPanel != null) FxContentPanel.Visibility = Visibility.Visible;
                 else if (_activePanel == 2) SettingsContentPanel.Visibility = Visibility.Visible;
                 else if (_activePanel == 3 && PlaybackContentPanel != null) PlaybackContentPanel.Visibility = Visibility.Visible;
+
+                if (BottomPlaybackBarBorder != null)
+                {
+                    BottomPlaybackBarBorder.Visibility = (_activePanel == 3) ? Visibility.Collapsed : Visibility.Visible;
+                }
 
                 DoubleAnimation widthAnim = new DoubleAnimation(this.ActualWidth, 1100, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
                 DoubleAnimation heightAnim = new DoubleAnimation(this.ActualHeight, 768, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
@@ -240,16 +242,13 @@ namespace EqualizerPro
             }
         }
 
-        private void EqualizerBtn_Click(object sender, RoutedEventArgs e)
+        private void EqualizerBtn_Click(object? sender, RoutedEventArgs e)
         {
             _activePanel = 0;
-            if (NavEqActive == null || NavSettingsActive == null || NavFxActive == null || NavPlaybackActive == null) return;
+            if (NavEqActive == null || NavSettingsActive == null || NavPlaybackActive == null) return;
 
             NavEqActive.Visibility = Visibility.Visible;
             NavEqBtn.Visibility = Visibility.Collapsed;
-
-            NavFxActive.Visibility = Visibility.Collapsed;
-            NavFxBtn.Visibility = Visibility.Visible;
 
             NavPlaybackActive.Visibility = Visibility.Collapsed;
             NavPlaybackBtn.Visibility = Visibility.Visible;
@@ -258,50 +257,22 @@ namespace EqualizerPro
             NavSettingsBtn.Visibility = Visibility.Visible;
 
             SettingsContentPanel.Visibility = Visibility.Collapsed;
-            if (FxContentPanel != null) FxContentPanel.Visibility = Visibility.Collapsed;
             if (PlaybackContentPanel != null) PlaybackContentPanel.Visibility = Visibility.Collapsed;
             EqContentPanel.Visibility = Visibility.Visible;
+
+            if (BottomPlaybackBarBorder != null) BottomPlaybackBarBorder.Visibility = Visibility.Visible;
 
             var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250));
             EqContentPanel.BeginAnimation(UIElement.OpacityProperty, fadeIn);
         }
 
-        private void FxBtn_Click(object sender, RoutedEventArgs e)
-        {
-            _activePanel = 1;
-            if (NavEqActive == null || NavSettingsActive == null || NavFxActive == null || NavPlaybackActive == null) return;
-
-            NavEqActive.Visibility = Visibility.Collapsed;
-            NavEqBtn.Visibility = Visibility.Visible;
-
-            NavFxActive.Visibility = Visibility.Visible;
-            NavFxBtn.Visibility = Visibility.Collapsed;
-
-            NavPlaybackActive.Visibility = Visibility.Collapsed;
-            NavPlaybackBtn.Visibility = Visibility.Visible;
-
-            NavSettingsActive.Visibility = Visibility.Collapsed;
-            NavSettingsBtn.Visibility = Visibility.Visible;
-
-            EqContentPanel.Visibility = Visibility.Collapsed;
-            SettingsContentPanel.Visibility = Visibility.Collapsed;
-            if (PlaybackContentPanel != null) PlaybackContentPanel.Visibility = Visibility.Collapsed;
-            if (FxContentPanel != null) FxContentPanel.Visibility = Visibility.Visible;
-
-            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250));
-            FxContentPanel?.BeginAnimation(UIElement.OpacityProperty, fadeIn);
-        }
-
-        private void PlaybackNavBtn_Click(object sender, RoutedEventArgs e)
+        private void PlaybackNavBtn_Click(object? sender, RoutedEventArgs e)
         {
             _activePanel = 3;
-            if (NavEqActive == null || NavSettingsActive == null || NavFxActive == null || NavPlaybackActive == null) return;
+            if (NavEqActive == null || NavSettingsActive == null || NavPlaybackActive == null) return;
 
             NavEqActive.Visibility = Visibility.Collapsed;
             NavEqBtn.Visibility = Visibility.Visible;
-
-            NavFxActive.Visibility = Visibility.Collapsed;
-            NavFxBtn.Visibility = Visibility.Visible;
 
             NavPlaybackActive.Visibility = Visibility.Visible;
             NavPlaybackBtn.Visibility = Visibility.Collapsed;
@@ -310,24 +281,22 @@ namespace EqualizerPro
             NavSettingsBtn.Visibility = Visibility.Visible;
 
             EqContentPanel.Visibility = Visibility.Collapsed;
-            if (FxContentPanel != null) FxContentPanel.Visibility = Visibility.Collapsed;
             SettingsContentPanel.Visibility = Visibility.Collapsed;
             if (PlaybackContentPanel != null) PlaybackContentPanel.Visibility = Visibility.Visible;
+
+            if (BottomPlaybackBarBorder != null) BottomPlaybackBarBorder.Visibility = Visibility.Collapsed;
 
             var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250));
             PlaybackContentPanel?.BeginAnimation(UIElement.OpacityProperty, fadeIn);
         }
 
-        private void SettingsBtn_Click(object sender, RoutedEventArgs e)
+        private void SettingsBtn_Click(object? sender, RoutedEventArgs e)
         {
             _activePanel = 2;
-            if (NavEqActive == null || NavSettingsActive == null || NavFxActive == null || NavPlaybackActive == null) return;
+            if (NavEqActive == null || NavSettingsActive == null || NavPlaybackActive == null) return;
 
             NavEqActive.Visibility = Visibility.Collapsed;
             NavEqBtn.Visibility = Visibility.Visible;
-
-            NavFxActive.Visibility = Visibility.Collapsed;
-            NavFxBtn.Visibility = Visibility.Visible;
 
             NavPlaybackActive.Visibility = Visibility.Collapsed;
             NavPlaybackBtn.Visibility = Visibility.Visible;
@@ -336,18 +305,16 @@ namespace EqualizerPro
             NavSettingsBtn.Visibility = Visibility.Collapsed;
 
             EqContentPanel.Visibility = Visibility.Collapsed;
-            if (FxContentPanel != null) FxContentPanel.Visibility = Visibility.Collapsed;
             if (PlaybackContentPanel != null) PlaybackContentPanel.Visibility = Visibility.Collapsed;
             SettingsContentPanel.Visibility = Visibility.Visible;
+
+            if (BottomPlaybackBarBorder != null) BottomPlaybackBarBorder.Visibility = Visibility.Visible;
 
             var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250));
             SettingsContentPanel.BeginAnimation(UIElement.OpacityProperty, fadeIn);
         }
 
-        // ==========================================
-        // Fat Mode Switch Logic
-        // ==========================================
-        private void FatModeToggle_Click(object sender, RoutedEventArgs e)
+        private void FatModeToggle_Click(object? sender, RoutedEventArgs e)
         {
             if (sender is ToggleButton toggle)
             {
@@ -356,28 +323,25 @@ namespace EqualizerPro
             }
         }
 
-        // ==========================================
-        // Settings: Visualizer Graphics Logic
-        // ==========================================
         private void SetVisualizerFrameRate(int comboIndex)
         {
             if (_visualizerTimer == null) return;
 
             switch (comboIndex)
             {
-                case 0: // 30 FPS (Eco)
+                case 0:
                     _visualizerTimer.Interval = TimeSpan.FromMilliseconds(33.33);
                     break;
-                case 1: // 60 FPS (Default)
+                case 1:
                     _visualizerTimer.Interval = TimeSpan.FromMilliseconds(16.66);
                     break;
-                case 2: // 120 FPS (Ultra)
+                case 2:
                     _visualizerTimer.Interval = TimeSpan.FromMilliseconds(8.33);
                     break;
             }
         }
 
-        private void VisualizerFpsSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void VisualizerFpsSelector_SelectionChanged(object? sender, SelectionChangedEventArgs e)
         {
             if (_isLoadingSettings) return;
 
@@ -388,14 +352,14 @@ namespace EqualizerPro
             }
         }
 
-        private void SpectrumFalloffSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        private void SpectrumFalloffSlider_ValueChanged(object? sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_isLoadingSettings) return;
             _spectrumFalloffDropRate = (e.NewValue / 100.0) * 5.0;
             if (_spectrumFalloffDropRate < 0.1) _spectrumFalloffDropRate = 0.1;
         }
 
-        private void EcoModeToggle_Click(object sender, RoutedEventArgs e)
+        private void EcoModeToggle_Click(object? sender, RoutedEventArgs e)
         {
             if (sender is ToggleButton toggle)
             {
@@ -409,17 +373,14 @@ namespace EqualizerPro
             }
         }
 
-        // ==========================================
-        // Audio Recording Engine & UX Animations
-        // ==========================================
-        private void RecordBtn_Click(object sender, MouseButtonEventArgs e)
+        private void RecordBtn_Click(object? sender, MouseButtonEventArgs e)
         {
             e.Handled = true;
             if (!_isRecording) StartRecording();
             else StopRecording();
         }
 
-        private void RecordBtn_Click(object sender, RoutedEventArgs e)
+        private void RecordBtn_Click(object? sender, RoutedEventArgs e)
         {
             e.Handled = true;
             if (!_isRecording) StartRecording();
@@ -445,7 +406,7 @@ namespace EqualizerPro
 
                 _loopbackCapture.DataAvailable += (s, a) =>
                 {
-                    _waveWriter.Write(a.Buffer, 0, a.BytesRecorded);
+                    _waveWriter?.Write(a.Buffer, 0, a.BytesRecorded);
                 };
 
                 _loopbackCapture.RecordingStopped += LoopbackCapture_RecordingStopped;
@@ -453,7 +414,6 @@ namespace EqualizerPro
                 _loopbackCapture.StartRecording();
                 _isRecording = true;
 
-                // UI Updates
                 NavRecordBtn.Visibility = Visibility.Collapsed;
                 NavRecordActive.Visibility = Visibility.Visible;
                 _recordDuration = TimeSpan.Zero;
@@ -512,7 +472,6 @@ namespace EqualizerPro
 
             _loopbackCapture?.StopRecording();
 
-            // Reset UI
             NavRecordActive.Visibility = Visibility.Collapsed;
             NavRecordBtn.Visibility = Visibility.Visible;
 
@@ -528,7 +487,7 @@ namespace EqualizerPro
             NavRecordActive.Background = (SolidColorBrush)FindResource("GlassOverlayBrush");
         }
 
-        private void LoopbackCapture_RecordingStopped(object sender, StoppedEventArgs e)
+        private void LoopbackCapture_RecordingStopped(object? sender, StoppedEventArgs e)
         {
             Dispatcher.Invoke(() =>
             {
@@ -537,7 +496,7 @@ namespace EqualizerPro
                 _loopbackCapture?.Dispose();
                 _loopbackCapture = null;
 
-                SaveFileDialog saveFileDialog = new SaveFileDialog
+                Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog
                 {
                     Filter = "WAV Audio File (*.wav)|*.wav",
                     Title = "Save Recorded Audio",
@@ -566,15 +525,12 @@ namespace EqualizerPro
             });
         }
 
-        private void RecordTimer_Tick(object sender, EventArgs e)
+        private void RecordTimer_Tick(object? sender, EventArgs e)
         {
             _recordDuration = _recordDuration.Add(TimeSpan.FromSeconds(1));
             RecordTimeText.Text = string.Format("{0:D2}:{1:D2}", _recordDuration.Minutes, _recordDuration.Seconds);
         }
 
-        // ==========================================
-        // System Tray & Window State Logic
-        // ==========================================
         private void InitializeSystemTray()
         {
             _notifyIcon = new System.Windows.Forms.NotifyIcon();
@@ -668,9 +624,6 @@ namespace EqualizerPro
             catch { }
         }
 
-        // ==========================================
-        // App Save/Load Settings
-        // ==========================================
         private string GetSettingsFilePath()
         {
             string appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
@@ -859,10 +812,7 @@ namespace EqualizerPro
             return null;
         }
 
-        // ==========================================
-        // UI Settings Toggles
-        // ==========================================
-        private void AlwaysOnTopToggle_Click(object sender, RoutedEventArgs e)
+        private void AlwaysOnTopToggle_Click(object? sender, RoutedEventArgs e)
         {
             bool keepOnTop = AlwaysOnTopToggle.IsChecked ?? false;
             this.Topmost = false;
@@ -874,7 +824,7 @@ namespace EqualizerPro
             }
         }
 
-        private void StartWithWindowsToggle_Click(object sender, RoutedEventArgs e)
+        private void StartWithWindowsToggle_Click(object? sender, RoutedEventArgs e)
         {
             bool enableStart = StartWithWindowsToggle.IsChecked ?? false;
             SetStartWithWindows(enableStart);
@@ -891,7 +841,7 @@ namespace EqualizerPro
                     {
                         if (enable)
                         {
-                            string appPath = Environment.ProcessPath;
+                            string? appPath = Environment.ProcessPath;
                             if (!string.IsNullOrEmpty(appPath))
                             {
                                 key.SetValue("EqualizerPro", appPath);
@@ -907,7 +857,7 @@ namespace EqualizerPro
             catch { }
         }
 
-        private void VolumeSliderControl_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        private void VolumeSliderControl_ValueChanged(object? sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (!_isUpdatingVolumeUI && IsLoaded)
             {
@@ -915,9 +865,6 @@ namespace EqualizerPro
             }
         }
 
-        // ==========================================
-        // DSP Equalizer Engine
-        // ==========================================
         private void InitializePresets()
         {
             _eqPresets.Add("Custom", new double[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
@@ -929,7 +876,7 @@ namespace EqualizerPro
             _eqPresets.Add("Dance", new double[] { 8, 6, 2, 0, -2, -2, 0, 2, 4, 6 });
         }
 
-        private void GlobalEqToggle_Click(object sender, RoutedEventArgs e)
+        private void GlobalEqToggle_Click(object? sender, RoutedEventArgs e)
         {
             _isEqEnabled = GlobalEqToggle.IsChecked ?? false;
 
@@ -939,7 +886,7 @@ namespace EqualizerPro
             ApplyEqToAudioStream();
         }
 
-        private void CompactEqToggle_Click(object sender, RoutedEventArgs e)
+        private void CompactEqToggle_Click(object? sender, RoutedEventArgs e)
         {
             _isEqEnabled = CompactEqToggle?.IsChecked ?? false;
 
@@ -949,7 +896,7 @@ namespace EqualizerPro
             ApplyEqToAudioStream();
         }
 
-        private void PresetSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void PresetSelector_SelectionChanged(object? sender, SelectionChangedEventArgs e)
         {
             if (_isUpdatingPreset || PresetSelector == null || _eqSliders == null) return;
 
@@ -957,10 +904,9 @@ namespace EqualizerPro
             if (selected == null) return;
 
             string presetName = selected.Content.ToString();
-            if (_eqPresets.ContainsKey(presetName))
+            if (_eqPresets.TryGetValue(presetName, out double[]? values))
             {
                 _isUpdatingPreset = true;
-                double[] values = _eqPresets[presetName];
 
                 for (int i = 0; i < 10; i++) _eqSliders[i].Value = values[i];
 
@@ -969,7 +915,7 @@ namespace EqualizerPro
             }
         }
 
-        private void EqSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        private void EqSlider_ValueChanged(object? sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (!_isUpdatingPreset && PresetSelector != null)
             {
@@ -1050,10 +996,7 @@ namespace EqualizerPro
             holeGeometry.BeginAnimation(EllipseGeometry.RadiusYProperty, anim);
         }
 
-        // ==========================================
-        // Custom Color Picker & Theme Handlers
-        // ==========================================
-        private void CustomColorBtn_Click(object sender, RoutedEventArgs e)
+        private void CustomColorBtn_Click(object? sender, RoutedEventArgs e)
         {
             if (ColorPickerPopup != null)
             {
@@ -1072,7 +1015,7 @@ namespace EqualizerPro
             }
         }
 
-        private void ColorSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        private void ColorSlider_ValueChanged(object? sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (RedSlider == null || GreenSlider == null || BlueSlider == null || HexInputBox == null) return;
 
@@ -1089,7 +1032,7 @@ namespace EqualizerPro
             }
         }
 
-        private void HexInputBox_TextChanged(object sender, TextChangedEventArgs e)
+        private void HexInputBox_TextChanged(object? sender, TextChangedEventArgs e)
         {
             if (_isUpdatingColorPicker || !IsLoaded || RedSlider == null) return;
 
@@ -1124,7 +1067,7 @@ namespace EqualizerPro
             }
         }
 
-        private void ApplyCustomColor_Click(object sender, RoutedEventArgs e)
+        private void ApplyCustomColor_Click(object? sender, RoutedEventArgs e)
         {
             if (ColorPickerPopup != null) ColorPickerPopup.IsOpen = false;
 
@@ -1183,7 +1126,7 @@ namespace EqualizerPro
             _currentAccent = _targetAccent;
         }
 
-        private void ModeSwitchBtn_Click(object sender, RoutedEventArgs e)
+        private void ModeSwitchBtn_Click(object? sender, RoutedEventArgs e)
         {
             Point origin = ModeSwitchBtn.TransformToAncestor(this).Transform(new Point(ModeSwitchBtn.ActualWidth / 2, ModeSwitchBtn.ActualHeight / 2));
 
@@ -1195,7 +1138,7 @@ namespace EqualizerPro
             });
         }
 
-        private void ThemeSelector_ThemeChanged(object sender, SelectionChangedEventArgs e)
+        private void ThemeSelector_ThemeChanged(object? sender, SelectionChangedEventArgs e)
         {
             if (_isLoadingSettings || ThemeSelector == null || !IsLoaded) return;
             var selectedItem = (ComboBoxItem)ThemeSelector.SelectedItem;
@@ -1303,7 +1246,7 @@ namespace EqualizerPro
             catch { }
         }
 
-        private void VisualizerTimer_Tick(object sender, EventArgs e)
+        private void VisualizerTimer_Tick(object? sender, EventArgs e)
         {
             bool needsColorUpdate = false;
             if (!ColorsAreClose(_curWindowBg, _tarWindowBg) || !ColorsAreClose(_currentAccent, _targetAccent))
@@ -1438,8 +1381,8 @@ namespace EqualizerPro
 
         private void KeepTextCentered(double l, double r)
         {
-            EqLeftDbText.Text = l <= -59.0 ? "-inf" : l.ToString("0.0");
-            EqRightDbText.Text = r <= -59.0 ? "-inf" : r.ToString("0.0");
+            if (EqLeftDbText != null) EqLeftDbText.Text = l <= -59.0 ? "-inf" : l.ToString("0.0");
+            if (EqRightDbText != null) EqRightDbText.Text = r <= -59.0 ? "-inf" : r.ToString("0.0");
         }
 
         private void DrawFrequencyGraph()
@@ -1491,7 +1434,7 @@ namespace EqualizerPro
 
         private void SessionManager_CurrentSessionChanged(GlobalSystemMediaTransportControlsSessionManager sender, CurrentSessionChangedEventArgs args) => UpdateCurrentSession(sender.GetCurrentSession());
 
-        private void UpdateCurrentSession(GlobalSystemMediaTransportControlsSession session)
+        private void UpdateCurrentSession(GlobalSystemMediaTransportControlsSession? session)
         {
             if (_currentSession != null)
             {
@@ -1517,19 +1460,22 @@ namespace EqualizerPro
             {
                 _playbackTimer.Stop();
                 Dispatcher.Invoke(() => {
-                    TrackTitle.Text = "Unknown Track";
-                    TrackArtist.Text = "Unknown Artist";
-                    TrackImageBrush.ImageSource = null;
-                    TrackIcon.Visibility = Visibility.Visible;
+                    if (TrackTitle != null) TrackTitle.Text = "Unknown Track";
+                    if (TrackArtist != null) TrackArtist.Text = "Unknown Artist";
+                    if (TrackImageBrush != null) TrackImageBrush.ImageSource = null;
+                    if (TrackIcon != null) TrackIcon.Visibility = Visibility.Visible;
 
                     if (PlaybackBigImageBrush != null) PlaybackBigImageBrush.ImageSource = null;
 
-                    CurrentTimeText.Text = "0:00";
-                    TotalTimeText.Text = "0:00";
-                    SeekSlider.Value = 0;
+                    if (CurrentTimeText != null) CurrentTimeText.Text = "0:00";
+                    if (TotalTimeText != null) TotalTimeText.Text = "0:00";
+                    if (SeekSlider != null) SeekSlider.Value = 0;
 
-                    PlayPauseIcon.Data = Geometry.Parse(PlayIconData);
-                    PlayPauseIcon.Margin = new Thickness(3, 0, 0, 0);
+                    if (PlayPauseIcon != null)
+                    {
+                        PlayPauseIcon.Data = Geometry.Parse(PlayIconData);
+                        PlayPauseIcon.Margin = new Thickness(3, 0, 0, 0);
+                    }
 
                     if (PlaybackBigPlayPauseIcon != null)
                     {
@@ -1543,7 +1489,7 @@ namespace EqualizerPro
         private void CurrentSession_MediaPropertiesChanged(GlobalSystemMediaTransportControlsSession sender, MediaPropertiesChangedEventArgs args) => UpdateMediaProperties();
         private void CurrentSession_PlaybackInfoChanged(GlobalSystemMediaTransportControlsSession sender, PlaybackInfoChangedEventArgs args) => UpdatePlaybackState();
         private void CurrentSession_TimelinePropertiesChanged(GlobalSystemMediaTransportControlsSession sender, TimelinePropertiesChangedEventArgs args) => UpdateTimeline();
-        private void PlaybackTimer_Tick(object sender, EventArgs e) => UpdateTimeline();
+        private void PlaybackTimer_Tick(object? sender, EventArgs e) => UpdateTimeline();
 
         private async void UpdateMediaProperties()
         {
@@ -1576,19 +1522,19 @@ namespace EqualizerPro
                     }
 
                     Dispatcher.Invoke(() => {
-                        TrackTitle.Text = title;
-                        TrackArtist.Text = artist;
+                        if (TrackTitle != null) TrackTitle.Text = title;
+                        if (TrackArtist != null) TrackArtist.Text = artist;
 
                         if (bitmapImage != null)
                         {
-                            TrackImageBrush.ImageSource = bitmapImage;
-                            TrackIcon.Visibility = Visibility.Collapsed;
+                            if (TrackImageBrush != null) TrackImageBrush.ImageSource = bitmapImage;
+                            if (TrackIcon != null) TrackIcon.Visibility = Visibility.Collapsed;
                             if (PlaybackBigImageBrush != null) PlaybackBigImageBrush.ImageSource = bitmapImage;
                         }
                         else
                         {
-                            TrackImageBrush.ImageSource = null;
-                            TrackIcon.Visibility = Visibility.Visible;
+                            if (TrackImageBrush != null) TrackImageBrush.ImageSource = null;
+                            if (TrackIcon != null) TrackIcon.Visibility = Visibility.Visible;
                             if (PlaybackBigImageBrush != null) PlaybackBigImageBrush.ImageSource = null;
                         }
                     });
@@ -1607,8 +1553,11 @@ namespace EqualizerPro
                 {
                     if (playbackInfo.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
                     {
-                        PlayPauseIcon.Data = Geometry.Parse(PauseIconData);
-                        PlayPauseIcon.Margin = new Thickness(0);
+                        if (PlayPauseIcon != null)
+                        {
+                            PlayPauseIcon.Data = Geometry.Parse(PauseIconData);
+                            PlayPauseIcon.Margin = new Thickness(0);
+                        }
 
                         if (PlaybackBigPlayPauseIcon != null)
                         {
@@ -1618,8 +1567,11 @@ namespace EqualizerPro
                     }
                     else
                     {
-                        PlayPauseIcon.Data = Geometry.Parse(PlayIconData);
-                        PlayPauseIcon.Margin = new Thickness(3, 0, 0, 0);
+                        if (PlayPauseIcon != null)
+                        {
+                            PlayPauseIcon.Data = Geometry.Parse(PlayIconData);
+                            PlayPauseIcon.Margin = new Thickness(3, 0, 0, 0);
+                        }
 
                         if (PlaybackBigPlayPauseIcon != null)
                         {
@@ -1653,20 +1605,23 @@ namespace EqualizerPro
                     if (currentPosition > timeline.EndTime) currentPosition = timeline.EndTime;
                     if (currentPosition < TimeSpan.Zero) currentPosition = TimeSpan.Zero;
 
-                    SeekSlider.Maximum = timeline.EndTime.TotalSeconds;
-                    SeekSlider.Value = currentPosition.TotalSeconds;
+                    if (SeekSlider != null)
+                    {
+                        SeekSlider.Maximum = timeline.EndTime.TotalSeconds;
+                        SeekSlider.Value = currentPosition.TotalSeconds;
+                    }
 
-                    CurrentTimeText.Text = string.Format("{0}:{1:D2}", Math.Floor(currentPosition.TotalMinutes), currentPosition.Seconds);
-                    TotalTimeText.Text = string.Format("{0}:{1:D2}", Math.Floor(timeline.EndTime.TotalMinutes), timeline.EndTime.Seconds);
+                    if (CurrentTimeText != null) CurrentTimeText.Text = string.Format("{0}:{1:D2}", Math.Floor(currentPosition.TotalMinutes), currentPosition.Seconds);
+                    if (TotalTimeText != null) TotalTimeText.Text = string.Format("{0}:{1:D2}", Math.Floor(timeline.EndTime.TotalMinutes), timeline.EndTime.Seconds);
                 });
             }
         }
 
-        private async void PlayPause_Click(object sender, MouseButtonEventArgs e)
+        private async void PlayPause_Click(object? sender, MouseButtonEventArgs e)
         {
             e.Handled = true;
 
-            if (PlayPauseBorder.RenderTransform is ScaleTransform scaleTransform)
+            if (PlayPauseBorder != null && PlayPauseBorder.RenderTransform is ScaleTransform scaleTransform)
             {
                 var popAnim = new DoubleAnimation(0.8, 1.0, TimeSpan.FromMilliseconds(400))
                 {
@@ -1692,23 +1647,23 @@ namespace EqualizerPro
             }
         }
 
-        private async void Previous_Click(object sender, RoutedEventArgs e)
+        private async void Previous_Click(object? sender, RoutedEventArgs e)
         {
             e.Handled = true;
             if (_currentSession != null) await _currentSession.TrySkipPreviousAsync();
         }
 
-        private async void Next_Click(object sender, RoutedEventArgs e)
+        private async void Next_Click(object? sender, RoutedEventArgs e)
         {
             e.Handled = true;
             if (_currentSession != null) await _currentSession.TrySkipNextAsync();
         }
 
-        private void SeekSlider_DragStarted(object sender, DragStartedEventArgs e) => _isDraggingSeekbar = true;
+        private void SeekSlider_DragStarted(object? sender, DragStartedEventArgs e) => _isDraggingSeekbar = true;
 
-        private async void SeekSlider_DragCompleted(object sender, DragCompletedEventArgs e)
+        private async void SeekSlider_DragCompleted(object? sender, DragCompletedEventArgs e)
         {
-            if (_currentSession != null)
+            if (_currentSession != null && SeekSlider != null)
             {
                 var newPosition = TimeSpan.FromSeconds(SeekSlider.Value);
                 await _currentSession.TryChangePlaybackPositionAsync(newPosition.Ticks);
@@ -1716,21 +1671,21 @@ namespace EqualizerPro
             _isDraggingSeekbar = false;
         }
 
-        private void SeekSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        private void SeekSlider_ValueChanged(object? sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            if (_isDraggingSeekbar)
+            if (_isDraggingSeekbar && SeekSlider != null && CurrentTimeText != null)
             {
                 var tempPosition = TimeSpan.FromSeconds(SeekSlider.Value);
                 CurrentTimeText.Text = string.Format("{0}:{1:D2}", Math.Floor(tempPosition.TotalMinutes), tempPosition.Seconds);
             }
         }
 
-        private async void SeekSlider_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        private async void SeekSlider_PreviewMouseLeftButtonUp(object? sender, MouseButtonEventArgs e)
         {
             if (_currentSession != null && !_isDraggingSeekbar)
             {
-                Slider clickedSlider = sender as Slider;
-                if (clickedSlider != null)
+                Slider? clickedSlider = sender as Slider;
+                if (clickedSlider != null && CurrentTimeText != null)
                 {
                     var newPosition = TimeSpan.FromSeconds(clickedSlider.Value);
                     await _currentSession.TryChangePlaybackPositionAsync(newPosition.Ticks);
@@ -1740,12 +1695,12 @@ namespace EqualizerPro
             }
         }
 
-        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        private void Window_MouseLeftButtonDown(object? sender, MouseButtonEventArgs e)
         {
             if (e.ButtonState == MouseButtonState.Pressed) DragMove();
         }
 
-        private void Minimize_Click(object sender, RoutedEventArgs e)
+        private void Minimize_Click(object? sender, RoutedEventArgs e)
         {
             if (MinimizeToTrayToggle != null && MinimizeToTrayToggle.IsChecked == true)
             {
@@ -1757,15 +1712,16 @@ namespace EqualizerPro
             }
         }
 
-        private void Maximize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState == WindowState.Normal ? WindowState.Maximized : WindowState.Normal;
+        private void Maximize_Click(object? sender, RoutedEventArgs e) => WindowState = WindowState == WindowState.Normal ? WindowState.Maximized : WindowState.Normal;
 
-        private void Close_Click(object sender, RoutedEventArgs e)
+        private void Close_Click(object? sender, RoutedEventArgs e)
         {
             this.Close();
         }
 
-        private void AboutBtn_Click(object sender, RoutedEventArgs e)
+        private void AboutBtn_Click(object? sender, RoutedEventArgs e)
         {
+            if (AboutOverlay == null || AboutScale == null) return;
             AboutOverlay.Visibility = Visibility.Visible;
 
             var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(200));
@@ -1779,17 +1735,15 @@ namespace EqualizerPro
             AboutScale.BeginAnimation(ScaleTransform.ScaleYProperty, popIn);
         }
 
-        private void CloseAbout_Click(object sender, RoutedEventArgs e)
+        private void CloseAbout_Click(object? sender, RoutedEventArgs e)
         {
+            if (AboutOverlay == null) return;
             var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(150));
             fadeOut.Completed += (s, ev) => AboutOverlay.Visibility = Visibility.Collapsed;
             AboutOverlay.BeginAnimation(UIElement.OpacityProperty, fadeOut);
         }
 
-        // ==========================================
-        // Text Marquee / Scrolling Logic
-        // ==========================================
-        private void MarqueeTimer_Tick(object sender, EventArgs e)
+        private void MarqueeTimer_Tick(object? sender, EventArgs e)
         {
             ScrollText(TrackTitleScroller);
             ScrollText(TrackArtistScroller);
@@ -1797,7 +1751,7 @@ namespace EqualizerPro
             ScrollText(PlaybackBigArtistScroller);
         }
 
-        private void ScrollText(ScrollViewer scroller)
+        private void ScrollText(ScrollViewer? scroller)
         {
             if (scroller != null && scroller.ScrollableWidth > 0)
             {
@@ -1815,7 +1769,7 @@ namespace EqualizerPro
 
     public static class SystemVolumeManager
     {
-        public static MMDevice GetDefaultDevice()
+        public static MMDevice? GetDefaultDevice()
         {
             try
             {
