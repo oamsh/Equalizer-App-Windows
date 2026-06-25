@@ -219,8 +219,9 @@ namespace EqualizerPro
                 if (CompactEqToggle != null) CompactEqToggle.Visibility = Visibility.Visible;
                 if (CompactPlaybackPanel != null) CompactPlaybackPanel.Visibility = Visibility.Visible;
 
-                DoubleAnimation widthAnim = new DoubleAnimation(this.ActualWidth, 650, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
-                DoubleAnimation heightAnim = new DoubleAnimation(this.ActualHeight, 220, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
+                // Increased width and height slightly to give shadows room
+                DoubleAnimation widthAnim = new DoubleAnimation(this.ActualWidth, 680, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
+                DoubleAnimation heightAnim = new DoubleAnimation(this.ActualHeight, 260, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
 
                 this.BeginAnimation(Window.WidthProperty, widthAnim);
                 this.BeginAnimation(Window.HeightProperty, heightAnim);
