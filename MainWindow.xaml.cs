@@ -87,6 +87,7 @@ namespace EqualizerPro
         private double[] _spectrumCurrents = new double[48];
         private double _spectrumFalloffDropRate = 2.0;
         private bool _isEcoModeEnabled = false;
+        private int _spectrumStyle = 0; // 0 = Bars, 1 = Line, 2 = Wave
 
         private double _leftDbTarget = 0;
         private double _leftDbCurrent = 0;
@@ -206,9 +207,6 @@ namespace EqualizerPro
             _isLoadingSettings = false;
         }
 
-        // ==========================================
-        // UI Navigation & Compact Mode Logic
-        // ==========================================
         private void CompactModeBtn_Click(object? sender, RoutedEventArgs e)
         {
             _isCompactMode = !_isCompactMode;
@@ -357,6 +355,17 @@ namespace EqualizerPro
                 _isSpatialSoundEnabled = toggle.IsChecked ?? false;
                 ApplyEqToAudioStream();
             }
+        }
+
+        private void SpectrumStyleSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isLoadingSettings || SpectrumStyleSelector == null || EqSpectrumGrid == null || SpectrumLinePath == null || SpectrumWavePath == null) return;
+
+            _spectrumStyle = SpectrumStyleSelector.SelectedIndex;
+
+            EqSpectrumGrid.Visibility = _spectrumStyle == 0 ? Visibility.Visible : Visibility.Collapsed;
+            SpectrumLinePath.Visibility = _spectrumStyle == 1 ? Visibility.Visible : Visibility.Collapsed;
+            SpectrumWavePath.Visibility = _spectrumStyle == 2 ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void SetVisualizerFrameRate(int comboIndex)
@@ -885,11 +894,12 @@ namespace EqualizerPro
                 string fatModeState = _isFatModeEnabled.ToString();
                 string superBassState = _isSuperBassEnabled.ToString();
                 string spatialState = _isSpatialSoundEnabled.ToString();
+                string specStyle = _spectrumStyle.ToString();
 
                 File.WriteAllLines(GetSettingsFilePath(), new string[] {
                     currentPreset, toggleState, darkModeState, accentColorHex,
                     alwaysOnTopState, minTrayState, startWinState, fpsIndex, falloffValue,
-                    ecoModeState, fatModeState, superBassState, spatialState
+                    ecoModeState, fatModeState, superBassState, spatialState, specStyle
                 });
             }
             catch { }
@@ -1039,6 +1049,19 @@ namespace EqualizerPro
                         {
                             _isSpatialSoundEnabled = isSpatial;
                             SpatialSoundToggle.IsChecked = isSpatial;
+                        }
+                    }
+
+                    if (lines.Length >= 14 && SpectrumStyleSelector != null)
+                    {
+                        if (int.TryParse(lines[13], out int specStyle))
+                        {
+                            _spectrumStyle = specStyle;
+                            SpectrumStyleSelector.SelectedIndex = _spectrumStyle;
+
+                            if (EqSpectrumGrid != null) EqSpectrumGrid.Visibility = _spectrumStyle == 0 ? Visibility.Visible : Visibility.Collapsed;
+                            if (SpectrumLinePath != null) SpectrumLinePath.Visibility = _spectrumStyle == 1 ? Visibility.Visible : Visibility.Collapsed;
+                            if (SpectrumWavePath != null) SpectrumWavePath.Visibility = _spectrumStyle == 2 ? Visibility.Visible : Visibility.Collapsed;
                         }
                     }
 
@@ -1587,6 +1610,7 @@ namespace EqualizerPro
             catch { }
         }
 
+        // --- NEW: Render Logic for Wave and Line Styles ---
         private void VisualizerTimer_Tick(object? sender, EventArgs e)
         {
             bool needsColorUpdate = false;
@@ -1667,9 +1691,35 @@ namespace EqualizerPro
 
                     if (_spectrumCurrents[i] < 2) _spectrumCurrents[i] = 2;
 
-                    if (EqSpectrumGrid.Children.Count > i && EqSpectrumGrid.Children[i] is Border border)
+                    // Update Bar style
+                    if (_spectrumStyle == 0 && EqSpectrumGrid.Children.Count > i && EqSpectrumGrid.Children[i] is Border border)
                     {
                         border.Height = _spectrumCurrents[i];
+                    }
+                }
+
+                // Update Line/Wave styles
+                if (_spectrumStyle == 1 || _spectrumStyle == 2)
+                {
+                    Point[] pts = new Point[48];
+                    for (int i = 0; i < 48; i++)
+                    {
+                        // Map abstract X from 0-47, Y from 0-80 (inverted for WPF drawing)
+                        pts[i] = new Point(i, 80 - _spectrumCurrents[i]);
+                    }
+
+                    if (_spectrumStyle == 1 && SpectrumLinePath != null)
+                    {
+                        SpectrumLinePath.Data = CreateSmoothCurve(pts);
+                    }
+                    else if (_spectrumStyle == 2 && SpectrumWavePath != null)
+                    {
+                        var fillGeom = CreateSmoothCurve(pts);
+                        var fig = ((PathGeometry)fillGeom).Figures[0];
+                        fig.Segments.Add(new LineSegment(new Point(47, 80), false));
+                        fig.Segments.Add(new LineSegment(new Point(0, 80), false));
+                        fig.IsClosed = true;
+                        SpectrumWavePath.Data = fillGeom;
                     }
                 }
             }

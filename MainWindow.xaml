@@ -852,19 +852,6 @@
                                             <Line Y1="0" Y2="0" X1="0" X2="10000" Stretch="Fill" Stroke="{DynamicResource BorderBrush}" VerticalAlignment="Center"/>
                                             <Line Y1="0" Y2="0" X1="0" X2="10000" Stretch="Fill" Stroke="{DynamicResource BorderBrush}" VerticalAlignment="Bottom" Margin="0,0,0,6"/>
 
-                                            <UniformGrid Columns="10">
-                                                <Border BorderBrush="{DynamicResource GlassOverlayBrush}" BorderThickness="1,0,0,0"/>
-                                                <Border BorderBrush="{DynamicResource GlassOverlayBrush}" BorderThickness="1,0,0,0"/>
-                                                <Border BorderBrush="{DynamicResource GlassOverlayBrush}" BorderThickness="1,0,0,0"/>
-                                                <Border BorderBrush="{DynamicResource GlassOverlayBrush}" BorderThickness="1,0,0,0"/>
-                                                <Border BorderBrush="{DynamicResource GlassOverlayBrush}" BorderThickness="1,0,0,0"/>
-                                                <Border BorderBrush="{DynamicResource GlassOverlayBrush}" BorderThickness="1,0,0,0"/>
-                                                <Border BorderBrush="{DynamicResource GlassOverlayBrush}" BorderThickness="1,0,0,0"/>
-                                                <Border BorderBrush="{DynamicResource GlassOverlayBrush}" BorderThickness="1,0,0,0"/>
-                                                <Border BorderBrush="{DynamicResource GlassOverlayBrush}" BorderThickness="1,0,0,0"/>
-                                                <Border BorderBrush="{DynamicResource GlassOverlayBrush}" BorderThickness="1,0,1,0"/>
-                                            </UniformGrid>
-
                                             <Path x:Name="EqFreqResponseFill" Stretch="Fill" Fill="{DynamicResource FreqFillGradientBrush}" Data="M 0,80 C 1,75 5,72 10,70 S 15,62 20,60 S 25,48 30,45 S 35,32 40,30 S 45,34 50,35 S 55,43 60,45 S 65,53 70,55 S 75,52 80,50 S 85,53 90,55 S 95,52 100,50 L 100,100 L 0,100 Z" Margin="0,6,0,6"/>
 
                                             <Path x:Name="EqFreqResponseLine" Stretch="Fill" Stroke="{DynamicResource AccentBrushLight}" StrokeThickness="2" StrokeLineJoin="Round" Data="M 0,80 C 1,75 5,72 10,70 S 15,62 20,60 S 25,48 30,45 S 35,32 40,30 S 45,34 50,35 S 55,43 60,45 S 65,53 70,55 S 75,52 80,50 S 85,53 90,55 S 95,52 100,50" Margin="0,6,0,6">
@@ -950,7 +937,19 @@
                                         <RowDefinition Height="*"/>
                                     </Grid.RowDefinitions>
 
-                                    <TextBlock Text="Spectrum Analyzer" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Spectrum Analyzer" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}"/>
+
+                                        <ComboBox x:Name="SpectrumStyleSelector" Grid.Column="1" Width="80" Height="22" Style="{StaticResource DarkComboBox}" SelectionChanged="SpectrumStyleSelector_SelectionChanged">
+                                            <ComboBoxItem Content="Bars" IsSelected="True"/>
+                                            <ComboBoxItem Content="Line"/>
+                                            <ComboBoxItem Content="Wave"/>
+                                        </ComboBox>
+                                    </Grid>
 
                                     <Grid Grid.Row="1" Margin="0,15,0,0">
                                         <Grid.ColumnDefinitions>
@@ -1005,7 +1004,7 @@
                                             <Line Y1="0" Y2="0" X1="0" X2="10000" Stretch="Fill" Stroke="{DynamicResource BorderBrush}" VerticalAlignment="Center"/>
                                             <Line Y1="0" Y2="0" X1="0" X2="10000" Stretch="Fill" Stroke="{DynamicResource BorderBrush}" VerticalAlignment="Bottom" Margin="0,0,0,6"/>
 
-                                            <UniformGrid x:Name="EqSpectrumGrid" Columns="48" Margin="0,6,0,6" VerticalAlignment="Bottom" Height="80">
+                                            <UniformGrid x:Name="EqSpectrumGrid" Columns="48" Margin="0,6,0,6" VerticalAlignment="Bottom" Height="80" Visibility="Visible">
                                                 <Border Style="{StaticResource SpectrumBar}" Height="15"/>
                                                 <Border Style="{StaticResource SpectrumBar}" Height="22"/>
                                                 <Border Style="{StaticResource SpectrumBar}" Height="35"/>
@@ -1055,6 +1054,15 @@
                                                 <Border Style="{StaticResource SpectrumBar}" Height="18"/>
                                                 <Border Style="{StaticResource SpectrumBar}" Height="10"/>
                                             </UniformGrid>
+
+                                            <Path x:Name="SpectrumWavePath" Stretch="Fill" Fill="{DynamicResource SpectrumGradientBrush}" Margin="0,6,0,6" Visibility="Collapsed" VerticalAlignment="Bottom" Height="80"/>
+
+                                            <Path x:Name="SpectrumLinePath" Stretch="Fill" Stroke="{DynamicResource AccentBrushLight}" StrokeThickness="2" StrokeLineJoin="Round" Margin="0,6,0,6" Visibility="Collapsed" VerticalAlignment="Bottom" Height="80">
+                                                <Path.Effect>
+                                                    <DropShadowEffect Color="{DynamicResource AccentColorLight}" BlurRadius="8" ShadowDepth="0"/>
+                                                </Path.Effect>
+                                            </Path>
+
                                         </Grid>
                                     </Grid>
                                 </Grid>
