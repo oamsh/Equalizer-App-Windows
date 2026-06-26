@@ -191,9 +191,11 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="ToggleButton">
                         <Border x:Name="OuterBorder" CornerRadius="18" Background="{DynamicResource GlassOverlayBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                            <Border.Effect>
+                                <DropShadowEffect Color="Black" BlurRadius="12" ShadowDepth="4" Opacity="0.3" Direction="270"/>
+                            </Border.Effect>
                             <Grid>
                                 <Border x:Name="ActiveBg" CornerRadius="17" Background="{DynamicResource AccentBrush}" Opacity="0" />
-
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                     <Grid Width="8" Height="8" Margin="0,0,10,0">
                                         <Ellipse x:Name="LedOff" Fill="{DynamicResource MutedTextBrush}" Opacity="0.5"/>
@@ -203,7 +205,6 @@
                                             </Ellipse.Effect>
                                         </Ellipse>
                                     </Grid>
-
                                     <TextBlock x:Name="Txt" Text="OFF" Foreground="{DynamicResource MutedTextBrush}" FontWeight="Bold" FontSize="12" VerticalAlignment="Center" Width="35" TextAlignment="Center"/>
                                 </StackPanel>
                             </Grid>
@@ -248,7 +249,7 @@
             <Setter Property="CornerRadius" Value="14"/>
             <Setter Property="Effect">
                 <Setter.Value>
-                    <DropShadowEffect Color="Black" BlurRadius="25" ShadowDepth="10" Opacity="0.2"/>
+                    <DropShadowEffect Color="Black" BlurRadius="40" ShadowDepth="15" Opacity="0.4" Direction="270"/>
                 </Setter.Value>
             </Setter>
         </Style>
@@ -258,6 +259,11 @@
             <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="Black" BlurRadius="10" ShadowDepth="3" Opacity="0.2" Direction="270"/>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <Style x:Key="DarkButton" TargetType="Button">
@@ -854,11 +860,9 @@
 
                                             <Path x:Name="EqFreqResponseFill" Stretch="Fill" Fill="{DynamicResource FreqFillGradientBrush}" Data="M 0,80 C 1,75 5,72 10,70 S 15,62 20,60 S 25,48 30,45 S 35,32 40,30 S 45,34 50,35 S 55,43 60,45 S 65,53 70,55 S 75,52 80,50 S 85,53 90,55 S 95,52 100,50 L 100,100 L 0,100 Z" Margin="0,6,0,6"/>
 
-                                            <Path x:Name="EqFreqResponseLine" Stretch="Fill" Stroke="{DynamicResource AccentBrushLight}" StrokeThickness="2" StrokeLineJoin="Round" Data="M 0,80 C 1,75 5,72 10,70 S 15,62 20,60 S 25,48 30,45 S 35,32 40,30 S 45,34 50,35 S 55,43 60,45 S 65,53 70,55 S 75,52 80,50 S 85,53 90,55 S 95,52 100,50" Margin="0,6,0,6">
-                                                <Path.Effect>
-                                                    <DropShadowEffect Color="{DynamicResource AccentColorLight}" BlurRadius="12" ShadowDepth="0"/>
-                                                </Path.Effect>
-                                            </Path>
+                                            <Path x:Name="EqFreqResponseLineGlow" Stretch="Fill" Stroke="{DynamicResource AccentBrushLight}" StrokeThickness="6" StrokeLineJoin="Round" Margin="0,6,0,6" Opacity="0.25" IsHitTestVisible="False"/>
+
+                                            <Path x:Name="EqFreqResponseLine" Stretch="Fill" Stroke="{DynamicResource AccentBrushLight}" StrokeThickness="2" StrokeLineJoin="Round" Margin="0,6,0,6" IsHitTestVisible="False"/>
                                         </Grid>
                                     </Grid>
                                 </Grid>
@@ -1004,7 +1008,7 @@
                                             <Line Y1="0" Y2="0" X1="0" X2="10000" Stretch="Fill" Stroke="{DynamicResource BorderBrush}" VerticalAlignment="Center"/>
                                             <Line Y1="0" Y2="0" X1="0" X2="10000" Stretch="Fill" Stroke="{DynamicResource BorderBrush}" VerticalAlignment="Bottom" Margin="0,0,0,6"/>
 
-                                            <UniformGrid x:Name="EqSpectrumGrid" Columns="48" Margin="0,6,0,6" VerticalAlignment="Bottom" Height="80" Visibility="Visible">
+                                            <UniformGrid x:Name="EqSpectrumGrid" RenderOptions.EdgeMode="Aliased" Columns="48" Margin="0,6,0,6" VerticalAlignment="Bottom" Height="80" Visibility="Visible">
                                                 <Border Style="{StaticResource SpectrumBar}" Height="15"/>
                                                 <Border Style="{StaticResource SpectrumBar}" Height="22"/>
                                                 <Border Style="{StaticResource SpectrumBar}" Height="35"/>
@@ -1055,13 +1059,11 @@
                                                 <Border Style="{StaticResource SpectrumBar}" Height="10"/>
                                             </UniformGrid>
 
-                                            <Path x:Name="SpectrumWavePath" Stretch="Fill" Fill="{DynamicResource SpectrumGradientBrush}" Margin="0,6,0,6" Visibility="Collapsed" VerticalAlignment="Bottom" Height="80"/>
+                                            <Path x:Name="SpectrumWavePath" Stretch="Fill" Fill="{DynamicResource SpectrumGradientBrush}" Margin="0,6,0,6" Visibility="Collapsed" VerticalAlignment="Bottom" Height="80" IsHitTestVisible="False"/>
 
-                                            <Path x:Name="SpectrumLinePath" Stretch="Fill" Stroke="{DynamicResource AccentBrushLight}" StrokeThickness="2" StrokeLineJoin="Round" Margin="0,6,0,6" Visibility="Collapsed" VerticalAlignment="Bottom" Height="80">
-                                                <Path.Effect>
-                                                    <DropShadowEffect Color="{DynamicResource AccentColorLight}" BlurRadius="8" ShadowDepth="0"/>
-                                                </Path.Effect>
-                                            </Path>
+                                            <Path x:Name="SpectrumLinePathGlow" Stretch="Fill" Stroke="{DynamicResource AccentBrushLight}" StrokeThickness="6" StrokeLineJoin="Round" Margin="0,6,0,6" Visibility="Collapsed" VerticalAlignment="Bottom" Height="80" Opacity="0.25" IsHitTestVisible="False" />
+
+                                            <Path x:Name="SpectrumLinePath" Stretch="Fill" Stroke="{DynamicResource AccentBrushLight}" StrokeThickness="2" StrokeLineJoin="Round" Margin="0,6,0,6" Visibility="Collapsed" VerticalAlignment="Bottom" Height="80" IsHitTestVisible="False" />
 
                                         </Grid>
                                     </Grid>

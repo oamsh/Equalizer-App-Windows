@@ -49,15 +49,12 @@ namespace EqualizerPro
         private bool _isDraggingSeekbar = false;
         private bool _isUpdatingVolumeUI = false;
 
-        // UI State Variables
         private bool _isCompactMode = false;
-        private int _activePanel = 0; // 0 = Equalizer, 2 = Settings, 3 = Playback
+        private int _activePanel = 0;
 
-        // System Tray variables
         private System.Windows.Forms.NotifyIcon? _notifyIcon;
         private bool _isForceClosing = false;
 
-        // Audio Recording Variables
         private WasapiLoopbackCapture? _loopbackCapture;
         private WaveFileWriter? _waveWriter;
         private string _tempRecordPath = string.Empty;
@@ -65,21 +62,17 @@ namespace EqualizerPro
         private TimeSpan _recordDuration;
         private bool _isRecording = false;
 
-        // Text Marquee / Scrolling Variables
         private DispatcherTimer _marqueeTimer;
 
-        // Equalizer Variables
         private Slider[] _eqSliders;
         private Dictionary<string, double[]> _eqPresets = new Dictionary<string, double[]>();
         private bool _isUpdatingPreset = false;
         private bool _isEqEnabled = true;
 
-        // Audio Processing Variables
         private bool _isFatModeEnabled = false;
         private bool _isSuperBassEnabled = false;
         private bool _isSpatialSoundEnabled = false;
 
-        // Visualizer & DB Meter Variables
         private DispatcherTimer _visualizerTimer;
         private double[] _freqTargets = new double[10];
         private double[] _freqCurrents = new double[10];
@@ -87,7 +80,7 @@ namespace EqualizerPro
         private double[] _spectrumCurrents = new double[48];
         private double _spectrumFalloffDropRate = 2.0;
         private bool _isEcoModeEnabled = false;
-        private int _spectrumStyle = 0; // 0 = Bars, 1 = Line, 2 = Wave
+        private int _spectrumStyle = 0;
 
         private double _leftDbTarget = 0;
         private double _leftDbCurrent = 0;
@@ -101,7 +94,6 @@ namespace EqualizerPro
         private readonly string PlayIconData = "M2,2 L14,8 L2,14 Z";
         private readonly string PauseIconData = "M2,2 L5,2 L5,14 L2,14 Z M11,2 L14,2 L14,14 L11,14 Z";
 
-        // Theme Variables
         private bool _isDarkMode = true;
         private Color _currentAccent = Color.FromRgb(92, 97, 255);
         private Color _targetAccent = Color.FromRgb(92, 97, 255);
@@ -163,10 +155,10 @@ namespace EqualizerPro
 
         private async void MainWindow_Loaded(object? sender, RoutedEventArgs e)
         {
-            EnableGlassmorphismBlur();
-
             LoadCustomPresets();
             LoadSettings();
+
+            // Instantly apply static colors and DWM on load, avoiding the lag loop.
             PushColorsToUI();
 
             LoadProfileImage();
@@ -364,7 +356,10 @@ namespace EqualizerPro
             _spectrumStyle = SpectrumStyleSelector.SelectedIndex;
 
             EqSpectrumGrid.Visibility = _spectrumStyle == 0 ? Visibility.Visible : Visibility.Collapsed;
+
+            SpectrumLinePathGlow.Visibility = _spectrumStyle == 1 ? Visibility.Visible : Visibility.Collapsed;
             SpectrumLinePath.Visibility = _spectrumStyle == 1 ? Visibility.Visible : Visibility.Collapsed;
+
             SpectrumWavePath.Visibility = _spectrumStyle == 2 ? Visibility.Visible : Visibility.Collapsed;
         }
 
@@ -1451,6 +1446,8 @@ namespace EqualizerPro
             TriggerWaveTransition(origin, () =>
             {
                 _targetAccent = Color.FromRgb(r, g, b);
+                SyncThemeVariablesToTarget();
+                PushColorsToUI();
             });
         }
 
@@ -1499,6 +1496,8 @@ namespace EqualizerPro
                 _isDarkMode = !_isDarkMode;
                 ModeSwitchBtn.Content = _isDarkMode ? "☀" : "🌙";
                 SetModeColors(_isDarkMode);
+                SyncThemeVariablesToTarget();
+                PushColorsToUI();
             });
         }
 
@@ -1523,6 +1522,8 @@ namespace EqualizerPro
                     case "Blue (Default)":
                     default: _targetAccent = Color.FromRgb(92, 97, 255); break;
                 }
+                SyncThemeVariablesToTarget();
+                PushColorsToUI();
             });
         }
 
@@ -1540,16 +1541,48 @@ namespace EqualizerPro
             return Math.Abs(c1.A - c2.A) < 2 && Math.Abs(c1.R - c2.R) < 2 && Math.Abs(c1.G - c2.G) < 2 && Math.Abs(c1.B - c2.B) < 2;
         }
 
+        // ==========================================
+        // ADVANCED GLASSMORPHISM LOGIC
+        // ==========================================
         private void PushColorsToUI()
         {
             try
             {
-                this.Resources["WindowBgBrush"] = new SolidColorBrush(_curWindowBg) { Opacity = 1 }.GetCurrentValueAsFrozen();
-                this.Resources["PanelBgBrush"] = new SolidColorBrush(_curPanelBg) { Opacity = 1 }.GetCurrentValueAsFrozen();
+                UpdateOSBlur();
+
+                var windowGradient = new RadialGradientBrush
+                {
+                    Center = new Point(0.5, 0),
+                    GradientOrigin = new Point(0.5, 0),
+                    RadiusX = 1.5,
+                    RadiusY = 1.2
+                };
+                windowGradient.GradientStops.Add(new GradientStop(Color.FromArgb(80, _currentAccent.R, _currentAccent.G, _currentAccent.B), 0.0));
+                windowGradient.GradientStops.Add(new GradientStop(_curWindowBg, 0.6));
+                windowGradient.Freeze();
+                this.Resources["WindowBgBrush"] = windowGradient;
+
+                var panelGradient = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(1, 1) };
+                panelGradient.GradientStops.Add(new GradientStop(Color.FromArgb((byte)(_curPanelBg.A), _curPanelBg.R, _curPanelBg.G, _curPanelBg.B), 0.0));
+                panelGradient.GradientStops.Add(new GradientStop(Color.FromArgb((byte)(_curPanelBg.A / 2), _curPanelBg.R, _curPanelBg.G, _curPanelBg.B), 1.0));
+                panelGradient.Freeze();
+                this.Resources["PanelBgBrush"] = panelGradient;
+
+                var borderGradient = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(1, 1) };
+                borderGradient.GradientStops.Add(new GradientStop(_curBorder, 0.0));
+                borderGradient.GradientStops.Add(new GradientStop(Color.FromArgb(5, _curBorder.R, _curBorder.G, _curBorder.B), 1.0));
+                borderGradient.Freeze();
+                this.Resources["BorderBrush"] = borderGradient;
+
                 this.Resources["TextBrush"] = new SolidColorBrush(_curText) { Opacity = 1 }.GetCurrentValueAsFrozen();
                 this.Resources["MutedTextBrush"] = new SolidColorBrush(_curMutedText) { Opacity = 1 }.GetCurrentValueAsFrozen();
-                this.Resources["BorderBrush"] = new SolidColorBrush(_curBorder) { Opacity = 1 }.GetCurrentValueAsFrozen();
-                this.Resources["GlassOverlayBrush"] = new SolidColorBrush(_curOverlay) { Opacity = 1 }.GetCurrentValueAsFrozen();
+
+                var overlayGradient = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(1, 1) };
+                overlayGradient.GradientStops.Add(new GradientStop(_curOverlay, 0.0));
+                overlayGradient.GradientStops.Add(new GradientStop(Color.FromArgb((byte)(_curOverlay.A / 3), _curOverlay.R, _curOverlay.G, _curOverlay.B), 1.0));
+                overlayGradient.Freeze();
+                this.Resources["GlassOverlayBrush"] = overlayGradient;
+
                 this.Resources["HoverBrush"] = new SolidColorBrush(_curHover) { Opacity = 1 }.GetCurrentValueAsFrozen();
 
                 Color lightAccent = Color.FromArgb(255,
@@ -1583,15 +1616,23 @@ namespace EqualizerPro
         [DllImport("user32.dll")]
         internal static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WindowCompositionAttributeData data);
 
-        private void EnableGlassmorphismBlur()
+        private void UpdateOSBlur()
         {
             try
             {
                 var windowHelper = new WindowInteropHelper(this);
-                var accent = new AccentPolicy();
+                if (windowHelper.Handle == IntPtr.Zero) return;
 
+                var accent = new AccentPolicy();
                 accent.AccentState = AccentState.ACCENT_ENABLE_ACRYLICBLURBEHIND;
-                accent.GradientColor = 0x00000000;
+
+                byte a = 120;
+                byte r = _curWindowBg.R;
+                byte g = _curWindowBg.G;
+                byte b = _curWindowBg.B;
+                uint abgr = (uint)((a << 24) | (b << 16) | (g << 8) | r);
+
+                accent.GradientColor = abgr;
 
                 var accentStructSize = Marshal.SizeOf(accent);
                 var accentPtr = Marshal.AllocHGlobal(accentStructSize);
@@ -1610,31 +1651,11 @@ namespace EqualizerPro
             catch { }
         }
 
-        // --- NEW: Render Logic for Wave and Line Styles ---
+        // ==========================================
+        // OPTIMIZED VISUALIZER RENDERING
+        // ==========================================
         private void VisualizerTimer_Tick(object? sender, EventArgs e)
         {
-            bool needsColorUpdate = false;
-            if (!ColorsAreClose(_curWindowBg, _tarWindowBg) || !ColorsAreClose(_currentAccent, _targetAccent))
-            {
-                _curWindowBg = LerpColor(_curWindowBg, _tarWindowBg, 0.08);
-                _curPanelBg = LerpColor(_curPanelBg, _tarPanelBg, 0.08);
-                _curText = LerpColor(_curText, _tarText, 0.08);
-                _curMutedText = LerpColor(_curMutedText, _tarMutedText, 0.08);
-                _curBorder = LerpColor(_curBorder, _tarBorder, 0.08);
-                _curOverlay = LerpColor(_curOverlay, _tarOverlay, 0.08);
-                _curHover = LerpColor(_curHover, _tarHover, 0.08);
-                _currentAccent = LerpColor(_currentAccent, _targetAccent, 0.08);
-                needsColorUpdate = true;
-            }
-            else if (_curWindowBg != _tarWindowBg || _currentAccent != _targetAccent)
-            {
-                _curWindowBg = _tarWindowBg; _curPanelBg = _tarPanelBg; _curText = _tarText;
-                _curMutedText = _tarMutedText; _curBorder = _tarBorder; _curOverlay = _tarOverlay;
-                _curHover = _tarHover; _currentAccent = _targetAccent;
-                needsColorUpdate = true;
-            }
-            if (needsColorUpdate) PushColorsToUI();
-
             float rawPeak = _isEcoModeEnabled ? 0f : SystemVolumeManager.GetPeakValue();
 
             double volumeFraction = VolumeSliderControl != null ? (VolumeSliderControl.Value / 100.0) : 1.0;
@@ -1691,35 +1712,33 @@ namespace EqualizerPro
 
                     if (_spectrumCurrents[i] < 2) _spectrumCurrents[i] = 2;
 
-                    // Update Bar style
                     if (_spectrumStyle == 0 && EqSpectrumGrid.Children.Count > i && EqSpectrumGrid.Children[i] is Border border)
                     {
-                        border.Height = _spectrumCurrents[i];
+                        // Performance saving: only trigger layout if visually noticeable
+                        if (Math.Abs(border.Height - _spectrumCurrents[i]) > 0.5)
+                        {
+                            border.Height = _spectrumCurrents[i];
+                        }
                     }
                 }
 
-                // Update Line/Wave styles
                 if (_spectrumStyle == 1 || _spectrumStyle == 2)
                 {
                     Point[] pts = new Point[48];
                     for (int i = 0; i < 48; i++)
                     {
-                        // Map abstract X from 0-47, Y from 0-80 (inverted for WPF drawing)
                         pts[i] = new Point(i, 80 - _spectrumCurrents[i]);
                     }
 
                     if (_spectrumStyle == 1 && SpectrumLinePath != null)
                     {
-                        SpectrumLinePath.Data = CreateSmoothCurve(pts);
+                        var specLineGeom = CreateSmoothCurve(pts, false);
+                        SpectrumLinePath.Data = specLineGeom;
+                        if (SpectrumLinePathGlow != null) SpectrumLinePathGlow.Data = specLineGeom;
                     }
                     else if (_spectrumStyle == 2 && SpectrumWavePath != null)
                     {
-                        var fillGeom = CreateSmoothCurve(pts);
-                        var fig = ((PathGeometry)fillGeom).Figures[0];
-                        fig.Segments.Add(new LineSegment(new Point(47, 80), false));
-                        fig.Segments.Add(new LineSegment(new Point(0, 80), false));
-                        fig.IsClosed = true;
-                        SpectrumWavePath.Data = fillGeom;
+                        SpectrumWavePath.Data = CreateSmoothCurve(pts, true, new Point(47, 80), new Point(0, 80));
                     }
                 }
             }
@@ -1783,43 +1802,51 @@ namespace EqualizerPro
             Point[] points = new Point[10];
             for (int i = 0; i < 10; i++) points[i] = new Point(i * 11.11, _freqCurrents[i]);
 
-            var geometry = CreateSmoothCurve(points);
-            EqFreqResponseLine.Data = geometry;
-
-            var fillGeometry = CreateSmoothCurve(points);
-            var figure = ((PathGeometry)fillGeometry).Figures[0];
-            figure.Segments.Add(new LineSegment(new Point(100, 100), false));
-            figure.Segments.Add(new LineSegment(new Point(0, 100), false));
-            figure.IsClosed = true;
+            var fillGeometry = CreateSmoothCurve(points, true, new Point(100, 100), new Point(0, 100));
+            var lineGeometry = CreateSmoothCurve(points, false);
 
             EqFreqResponseFill.Data = fillGeometry;
+            EqFreqResponseLine.Data = lineGeometry;
+            if (EqFreqResponseLineGlow != null) EqFreqResponseLineGlow.Data = lineGeometry;
         }
 
-        private PathGeometry CreateSmoothCurve(Point[] points)
+        // Extremely fast StreamGeometry builder replacing heavy PathGeometry
+        private Geometry CreateSmoothCurve(Point[] points, bool isClosed, Point bottomRight = default, Point bottomLeft = default)
         {
-            PathGeometry geometry = new PathGeometry();
-            if (points.Length < 2) return geometry;
-
-            PathFigure figure = new PathFigure { StartPoint = points[0], IsClosed = false };
-            PolyBezierSegment segment = new PolyBezierSegment();
-            double tension = 0.3;
-
-            for (int i = 0; i < points.Length - 1; i++)
+            StreamGeometry geometry = new StreamGeometry();
+            using (StreamGeometryContext ctx = geometry.Open())
             {
-                Point p0 = i == 0 ? points[0] : points[i - 1];
-                Point p1 = points[i];
-                Point p2 = points[i + 1];
-                Point p3 = i + 2 == points.Length ? points[i + 1] : points[i + 2];
+                if (points.Length > 0)
+                {
+                    ctx.BeginFigure(points[0], true, isClosed);
+                    if (points.Length > 1)
+                    {
+                        double tension = 0.3;
+                        List<Point> bezierPoints = new List<Point>((points.Length - 1) * 3);
+                        for (int i = 0; i < points.Length - 1; i++)
+                        {
+                            Point p0 = i == 0 ? points[0] : points[i - 1];
+                            Point p1 = points[i];
+                            Point p2 = points[i + 1];
+                            Point p3 = i + 2 >= points.Length ? points[i + 1] : points[i + 2];
 
-                Point cp1 = new Point(p1.X + (p2.X - p0.X) * tension, p1.Y + (p2.Y - p0.Y) * tension);
-                Point cp2 = new Point(p2.X - (p3.X - p1.X) * tension, p2.Y - (p3.Y - p1.Y) * tension);
+                            bezierPoints.Add(new Point(p1.X + (p2.X - p0.X) * tension, p1.Y + (p2.Y - p0.Y) * tension));
+                            bezierPoints.Add(new Point(p2.X - (p3.X - p1.X) * tension, p2.Y - (p3.Y - p1.Y) * tension));
+                            bezierPoints.Add(p2);
+                        }
+                        ctx.PolyBezierTo(bezierPoints, true, true);
+                    }
 
-                segment.Points.Add(cp1);
-                segment.Points.Add(cp2);
-                segment.Points.Add(p2);
+                    if (isClosed)
+                    {
+                        ctx.LineTo(bottomRight, true, true);
+                        ctx.LineTo(bottomLeft, true, true);
+                    }
+                }
             }
-            figure.Segments.Add(segment);
-            geometry.Figures.Add(figure);
+
+            // This freeze prevents continuous WPF memory allocations and eliminates visualizer lag
+            geometry.Freeze();
             return geometry;
         }
 
