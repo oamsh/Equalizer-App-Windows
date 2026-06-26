@@ -31,6 +31,7 @@ using TextBox = System.Windows.Controls.TextBox;
 using Slider = System.Windows.Controls.Slider;
 using Expander = System.Windows.Controls.Expander;
 using ToggleButton = System.Windows.Controls.Primitives.ToggleButton;
+using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 // -----------------------
 
 namespace EqualizerPro
@@ -806,7 +807,6 @@ namespace EqualizerPro
 
         private void PresetPopup_Closed(object sender, EventArgs e)
         {
-            // Reset to main view whenever popup closes
             if (MainPresetList != null && CustomPresetList != null)
             {
                 CustomPresetList.Visibility = Visibility.Collapsed;
@@ -836,6 +836,23 @@ namespace EqualizerPro
 
                 if (_isEqEnabled) ApplyEqToAudioStream();
                 _isUpdatingPreset = false;
+            }
+        }
+
+        // ==========================================
+        // Textbox Edit Focus logic
+        // ==========================================
+        private void EqTextBox_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                if (sender is TextBox tb)
+                {
+                    var binding = tb.GetBindingExpression(TextBox.TextProperty);
+                    binding?.UpdateSource();
+                    binding?.UpdateTarget();
+                    Keyboard.ClearFocus();
+                }
             }
         }
 
@@ -1155,7 +1172,6 @@ namespace EqualizerPro
             if (_eqPresets.ContainsKey(presetName))
             {
                 _eqPresets[presetName] = currentValues;
-                // Update UI visually if it was overwritten
                 SelectPreset(presetName);
             }
             else

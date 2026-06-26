@@ -125,6 +125,17 @@
             </Setter>
         </Style>
 
+        <Style x:Key="EqValueTextBox" TargetType="TextBox" BasedOn="{StaticResource GlassTextBox}">
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Width" Value="44"/>
+            <Setter Property="Height" Value="26"/>
+            <Setter Property="Padding" Value="0,4"/>
+            <Setter Property="Margin" Value="0"/>
+        </Style>
+
         <Style x:Key="ToggleSwitchStyle" TargetType="ToggleButton">
             <Setter Property="Width" Value="46"/>
             <Setter Property="Height" Value="24"/>
@@ -314,7 +325,6 @@
 
         <Style x:Key="NeonSlider" TargetType="Slider">
             <Setter Property="Orientation" Value="Vertical"/>
-            <Setter Property="IsDirectionReversed" Value="True"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Slider">
@@ -322,16 +332,16 @@
                             <Border Width="2" Background="{DynamicResource BorderBrush}" HorizontalAlignment="Center" CornerRadius="1" Margin="0,8"/>
                             <Track x:Name="PART_Track">
                                 <Track.DecreaseRepeatButton>
-                                    <RepeatButton Command="{x:Static Slider.DecreaseLarge}" Opacity="0"/>
-                                </Track.DecreaseRepeatButton>
-                                <Track.IncreaseRepeatButton>
-                                    <RepeatButton Command="{x:Static Slider.IncreaseLarge}">
+                                    <RepeatButton Command="{x:Static Slider.DecreaseLarge}">
                                         <RepeatButton.Template>
                                             <ControlTemplate TargetType="RepeatButton">
                                                 <Border Width="2" Background="{DynamicResource AccentBrush}" HorizontalAlignment="Center" Margin="0,8"/>
                                             </ControlTemplate>
                                         </RepeatButton.Template>
                                     </RepeatButton>
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="{x:Static Slider.IncreaseLarge}" Opacity="0"/>
                                 </Track.IncreaseRepeatButton>
                                 <Track.Thumb>
                                     <Thumb Width="16" Height="16">
@@ -656,9 +666,7 @@
                                                 </Grid.RowDefinitions>
                                                 <Slider x:Name="Slider1" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
                                                 <TextBlock Grid.Row="1" Text="31 Hz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                                <Border Grid.Row="2" Style="{StaticResource GlassOverlay}" Padding="0,6" Width="44" HorizontalAlignment="Center">
-                                                    <TextBlock Text="{Binding Value, ElementName=Slider1, StringFormat={}{0:0.0}}" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center"/>
-                                                </Border>
+                                                <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider1, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
                                             </Grid>
                                             <Grid>
                                                 <Grid.RowDefinitions>
@@ -668,9 +676,7 @@
                                                 </Grid.RowDefinitions>
                                                 <Slider x:Name="Slider2" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
                                                 <TextBlock Grid.Row="1" Text="62 Hz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                                <Border Grid.Row="2" Style="{StaticResource GlassOverlay}" Padding="0,6" Width="44" HorizontalAlignment="Center">
-                                                    <TextBlock Text="{Binding Value, ElementName=Slider2, StringFormat={}{0:0.0}}" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center"/>
-                                                </Border>
+                                                <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider2, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
                                             </Grid>
                                             <Grid>
                                                 <Grid.RowDefinitions>
@@ -680,9 +686,7 @@
                                                 </Grid.RowDefinitions>
                                                 <Slider x:Name="Slider3" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
                                                 <TextBlock Grid.Row="1" Text="125 Hz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                                <Border Grid.Row="2" Style="{StaticResource GlassOverlay}" Padding="0,6" Width="44" HorizontalAlignment="Center">
-                                                    <TextBlock Text="{Binding Value, ElementName=Slider3, StringFormat={}{0:0.0}}" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center"/>
-                                                </Border>
+                                                <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider3, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
                                             </Grid>
                                             <Grid>
                                                 <Grid.RowDefinitions>
@@ -692,9 +696,7 @@
                                                 </Grid.RowDefinitions>
                                                 <Slider x:Name="Slider4" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
                                                 <TextBlock Grid.Row="1" Text="250 Hz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                                <Border Grid.Row="2" Style="{StaticResource GlassOverlay}" Padding="0,6" Width="44" HorizontalAlignment="Center">
-                                                    <TextBlock Text="{Binding Value, ElementName=Slider4, StringFormat={}{0:0.0}}" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center"/>
-                                                </Border>
+                                                <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider4, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
                                             </Grid>
                                             <Grid>
                                                 <Grid.RowDefinitions>
@@ -704,9 +706,7 @@
                                                 </Grid.RowDefinitions>
                                                 <Slider x:Name="Slider5" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
                                                 <TextBlock Grid.Row="1" Text="500 Hz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                                <Border Grid.Row="2" Style="{StaticResource GlassOverlay}" Padding="0,6" Width="44" HorizontalAlignment="Center">
-                                                    <TextBlock Text="{Binding Value, ElementName=Slider5, StringFormat={}{0:0.0}}" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center"/>
-                                                </Border>
+                                                <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider5, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
                                             </Grid>
                                             <Grid>
                                                 <Grid.RowDefinitions>
@@ -716,9 +716,7 @@
                                                 </Grid.RowDefinitions>
                                                 <Slider x:Name="Slider6" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
                                                 <TextBlock Grid.Row="1" Text="1 kHz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                                <Border Grid.Row="2" Style="{StaticResource GlassOverlay}" Padding="0,6" Width="44" HorizontalAlignment="Center">
-                                                    <TextBlock Text="{Binding Value, ElementName=Slider6, StringFormat={}{0:0.0}}" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center"/>
-                                                </Border>
+                                                <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider6, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
                                             </Grid>
                                             <Grid>
                                                 <Grid.RowDefinitions>
@@ -728,9 +726,7 @@
                                                 </Grid.RowDefinitions>
                                                 <Slider x:Name="Slider7" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
                                                 <TextBlock Grid.Row="1" Text="2 kHz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                                <Border Grid.Row="2" Style="{StaticResource GlassOverlay}" Padding="0,6" Width="44" HorizontalAlignment="Center">
-                                                    <TextBlock Text="{Binding Value, ElementName=Slider7, StringFormat={}{0:0.0}}" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center"/>
-                                                </Border>
+                                                <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider7, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
                                             </Grid>
                                             <Grid>
                                                 <Grid.RowDefinitions>
@@ -740,9 +736,7 @@
                                                 </Grid.RowDefinitions>
                                                 <Slider x:Name="Slider8" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
                                                 <TextBlock Grid.Row="1" Text="4 kHz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                                <Border Grid.Row="2" Style="{StaticResource GlassOverlay}" Padding="0,6" Width="44" HorizontalAlignment="Center">
-                                                    <TextBlock Text="{Binding Value, ElementName=Slider8, StringFormat={}{0:0.0}}" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center"/>
-                                                </Border>
+                                                <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider8, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
                                             </Grid>
                                             <Grid>
                                                 <Grid.RowDefinitions>
@@ -752,9 +746,7 @@
                                                 </Grid.RowDefinitions>
                                                 <Slider x:Name="Slider9" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
                                                 <TextBlock Grid.Row="1" Text="8 kHz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                                <Border Grid.Row="2" Style="{StaticResource GlassOverlay}" Padding="0,6" Width="44" HorizontalAlignment="Center">
-                                                    <TextBlock Text="{Binding Value, ElementName=Slider9, StringFormat={}{0:0.0}}" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center"/>
-                                                </Border>
+                                                <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider9, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
                                             </Grid>
                                             <Grid>
                                                 <Grid.RowDefinitions>
@@ -764,9 +756,7 @@
                                                 </Grid.RowDefinitions>
                                                 <Slider x:Name="Slider10" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
                                                 <TextBlock Grid.Row="1" Text="16 kHz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                                <Border Grid.Row="2" Style="{StaticResource GlassOverlay}" Padding="0,6" Width="44" HorizontalAlignment="Center">
-                                                    <TextBlock Text="{Binding Value, ElementName=Slider10, StringFormat={}{0:0.0}}" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center"/>
-                                                </Border>
+                                                <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider10, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
                                             </Grid>
                                         </UniformGrid>
                                     </Grid>
