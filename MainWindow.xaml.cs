@@ -1,7 +1,11 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using NAudio.CoreAudioApi;
+using NAudio.Wave;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -13,18 +17,15 @@ using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Windows.Media.Control;
-using Microsoft.Win32;
-using NAudio.Wave;
-using NAudio.CoreAudioApi;
-
-// --- AMBIGUITY FIXES ---
-using Point = System.Windows.Point;
-using Color = System.Windows.Media.Color;
+using Windows.UI.Notifications;
 using Application = System.Windows.Application;
+using Color = System.Windows.Media.Color;
 using ColorConverter = System.Windows.Media.ColorConverter;
-using MessageBox = System.Windows.MessageBox;
 using ComboBox = System.Windows.Controls.ComboBox;
 using ComboBoxItem = System.Windows.Controls.ComboBoxItem;
+using MessageBox = System.Windows.MessageBox;
+// --- AMBIGUITY FIXES ---
+using Point = System.Windows.Point;
 // -----------------------
 
 namespace EqualizerPro
@@ -911,6 +912,88 @@ namespace EqualizerPro
 
             if (SlidersContainerGrid != null) SlidersContainerGrid.Opacity = _isEqEnabled ? 1.0 : 0.4;
             ApplyEqToAudioStream();
+        }
+
+        // ==========================================
+        // Save Preset & Toast Logic
+        // ==========================================
+        private void SavePresetBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (SavePresetOverlay == null || SavePresetScale == null) return;
+            SavePresetOverlay.Visibility = Visibility.Visible;
+            PresetNameInput.Text = "";
+            PresetNameInput.Focus();
+
+            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(200));
+            SavePresetOverlay.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+
+            var popIn = new DoubleAnimation(0.95, 1.0, TimeSpan.FromMilliseconds(300))
+            {
+                EasingFunction = new QuarticEase { EasingMode = EasingMode.EaseOut }
+            };
+            SavePresetScale.BeginAnimation(ScaleTransform.ScaleXProperty, popIn);
+            SavePresetScale.BeginAnimation(ScaleTransform.ScaleYProperty, popIn);
+        }
+
+        private void CloseSavePreset_Click(object? sender, RoutedEventArgs e)
+        {
+            if (SavePresetOverlay == null) return;
+            var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(150));
+            fadeOut.Completed += (s, ev) => SavePresetOverlay.Visibility = Visibility.Collapsed;
+            SavePresetOverlay.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+        }
+
+        private void ConfirmSavePreset_Click(object sender, RoutedEventArgs e)
+        {
+            string presetName = PresetNameInput.Text.Trim();
+            if (string.IsNullOrEmpty(presetName))
+            {
+                MessageBox.Show("Please enter a preset name.", "Invalid Name", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            CloseSavePreset_Click(null, null);
+
+            double[] currentValues = new double[10];
+            for (int i = 0; i < 10; i++)
+            {
+                currentValues[i] = _eqSliders[i].Value;
+            }
+
+            if (_eqPresets.ContainsKey(presetName))
+            {
+                _eqPresets[presetName] = currentValues;
+            }
+            else
+            {
+                _eqPresets.Add(presetName, currentValues);
+
+                var newItem = new ComboBoxItem { Content = presetName };
+                PresetSelector.Items.Add(newItem);
+
+                _isUpdatingPreset = true;
+                PresetSelector.SelectedItem = newItem;
+                _isUpdatingPreset = false;
+            }
+
+            ShowToast($"Preset '{presetName}' Saved!");
+        }
+
+        private async void ShowToast(string message)
+        {
+            if (ToastNotification == null || ToastText == null) return;
+
+            ToastText.Text = message;
+            ToastNotification.Visibility = Visibility.Visible;
+
+            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(200));
+            ToastNotification.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+
+            await Task.Delay(2000);
+
+            var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(300));
+            fadeOut.Completed += (s, ev) => ToastNotification.Visibility = Visibility.Collapsed;
+            ToastNotification.BeginAnimation(UIElement.OpacityProperty, fadeOut);
         }
 
         private void PresetSelector_SelectionChanged(object? sender, SelectionChangedEventArgs e)

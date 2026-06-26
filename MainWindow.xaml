@@ -492,7 +492,7 @@
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                <Button Style="{StaticResource DarkButton}" BorderThickness="1" Padding="12,6" Margin="0,0,10,0">
+                                <Button x:Name="SavePresetBtn" Style="{StaticResource DarkButton}" BorderThickness="1" Padding="12,6" Margin="0,0,10,0" Click="SavePresetBtn_Click">
                                     <StackPanel Orientation="Horizontal">
                                         <Path Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.5" Stretch="Uniform" Width="13" Height="13" Data="M2,2 L9,2 L13,6 L13,13 L2,13 Z M4,13 L4,9 L11,9 L11,13 M4,2 L4,5 L9,5 L9,2"/>
                                         <TextBlock Text="Save Preset" Margin="8,0,0,0" VerticalAlignment="Center"/>
@@ -1374,6 +1374,30 @@
                 </Grid>
             </Border>
         </Grid>
+
+        <Grid x:Name="SavePresetOverlay" Visibility="Collapsed" Opacity="0">
+            <Border Background="#B2000000" MouseLeftButtonDown="CloseSavePreset_Click"/>
+            <Border Style="{StaticResource GlassPanel}" HorizontalAlignment="Center" VerticalAlignment="Center" Width="320" Padding="25" RenderTransformOrigin="0.5,0.5">
+                <Border.RenderTransform>
+                    <ScaleTransform x:Name="SavePresetScale" ScaleX="0.95" ScaleY="0.95"/>
+                </Border.RenderTransform>
+                <StackPanel>
+                    <TextBlock Text="Save Custom Preset" FontWeight="SemiBold" FontSize="16" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,15"/>
+                    <TextBox x:Name="PresetNameInput" Style="{StaticResource GlassTextBox}" Height="32" Margin="0,0,0,20"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="Cancel" Style="{StaticResource DarkButton}" Padding="15,6" Margin="0,0,10,0" Click="CloseSavePreset_Click"/>
+                        <Button Content="Save" Style="{StaticResource DarkButton}" Background="{DynamicResource AccentBrush}" Foreground="White" Padding="15,6" Click="ConfirmSavePreset_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Border x:Name="ToastNotification" Background="{DynamicResource AccentBrush}" CornerRadius="6" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,40" Padding="20,12" Visibility="Collapsed" Opacity="0" IsHitTestVisible="False">
+            <Border.Effect>
+                <DropShadowEffect Color="{DynamicResource AccentColor}" BlurRadius="15" ShadowDepth="0" Opacity="0.5"/>
+            </Border.Effect>
+            <TextBlock x:Name="ToastText" Text="Preset Saved Successfully!" Foreground="White" FontWeight="SemiBold" FontSize="14"/>
+        </Border>
 
         <Popup x:Name="ColorPickerPopup" PlacementTarget="{Binding ElementName=CustomColorBtn}" Placement="Bottom" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
             <Border Background="{DynamicResource WindowBgBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="15" Margin="0,5,0,0" Width="200">
