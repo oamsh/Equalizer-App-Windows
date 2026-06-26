@@ -574,10 +574,16 @@
 
                                                     <Button Style="{StaticResource DropdownItemStyle}" Content="Acoustic" Click="PresetItem_Click"/>
                                                     <Button Style="{StaticResource DropdownItemStyle}" Content="Bass Boost" Click="PresetItem_Click"/>
-                                                    <Button Style="{StaticResource DropdownItemStyle}" Content="Electronic" Click="PresetItem_Click"/>
-                                                    <Button Style="{StaticResource DropdownItemStyle}" Content="Vocal" Click="PresetItem_Click"/>
-                                                    <Button Style="{StaticResource DropdownItemStyle}" Content="Rock" Click="PresetItem_Click"/>
+                                                    <Button Style="{StaticResource DropdownItemStyle}" Content="Classical" Click="PresetItem_Click"/>
                                                     <Button Style="{StaticResource DropdownItemStyle}" Content="Dance" Click="PresetItem_Click"/>
+                                                    <Button Style="{StaticResource DropdownItemStyle}" Content="Electronic" Click="PresetItem_Click"/>
+                                                    <Button Style="{StaticResource DropdownItemStyle}" Content="Hip-Hop" Click="PresetItem_Click"/>
+                                                    <Button Style="{StaticResource DropdownItemStyle}" Content="Jazz" Click="PresetItem_Click"/>
+                                                    <Button Style="{StaticResource DropdownItemStyle}" Content="Pop" Click="PresetItem_Click"/>
+                                                    <Button Style="{StaticResource DropdownItemStyle}" Content="R&amp;B" Click="PresetItem_Click"/>
+                                                    <Button Style="{StaticResource DropdownItemStyle}" Content="Rock" Click="PresetItem_Click"/>
+                                                    <Button Style="{StaticResource DropdownItemStyle}" Content="Treble Boost" Click="PresetItem_Click"/>
+                                                    <Button Style="{StaticResource DropdownItemStyle}" Content="Vocal" Click="PresetItem_Click"/>
                                                 </StackPanel>
 
                                                 <StackPanel x:Name="CustomPresetList" Visibility="Collapsed">

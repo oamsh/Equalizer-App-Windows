@@ -667,7 +667,7 @@ namespace EqualizerPro
                 string path = Path.Combine(folder, "custom_presets.ini");
 
                 List<string> lines = new List<string>();
-                var defaultPresets = new HashSet<string> { "Custom", "Acoustic", "Bass Boost", "Electronic", "Vocal", "Rock", "Dance" };
+                var defaultPresets = new HashSet<string> { "Custom", "Acoustic", "Bass Boost", "Electronic", "Vocal", "Rock", "Dance", "Pop", "Classical", "Jazz", "Hip-Hop", "R&B", "Treble Boost" };
 
                 foreach (var kvp in _eqPresets)
                 {
@@ -1090,10 +1090,16 @@ namespace EqualizerPro
             _eqPresets.Add("Custom", new double[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
             _eqPresets.Add("Acoustic", new double[] { 5, 5, 4, 1, 1, 1, 3, 4, 3, 2 });
             _eqPresets.Add("Bass Boost", new double[] { 9, 7, 4, 2, 0, 0, 0, 0, 0, 0 });
-            _eqPresets.Add("Electronic", new double[] { 6, 5, 0, -2, -1, 2, 4, 6, 5, 3 });
-            _eqPresets.Add("Vocal", new double[] { -2, -1, 1, 4, 6, 6, 5, 2, 0, -1 });
-            _eqPresets.Add("Rock", new double[] { 6, 4, 2, -1, -2, -1, 2, 4, 5, 6 });
+            _eqPresets.Add("Classical", new double[] { 4.5, 3.5, 3.0, 2.0, -1.0, -1.0, 0.0, 2.5, 3.5, 4.0 });
             _eqPresets.Add("Dance", new double[] { 8, 6, 2, 0, -2, -2, 0, 2, 4, 6 });
+            _eqPresets.Add("Electronic", new double[] { 6, 5, 0, -2, -1, 2, 4, 6, 5, 3 });
+            _eqPresets.Add("Hip-Hop", new double[] { 4.5, 3.5, 1.0, 3.0, -1.0, -1.0, 1.0, -1.0, 2.0, 3.0 });
+            _eqPresets.Add("Jazz", new double[] { 3.5, 2.5, 1.0, 2.0, -1.0, -1.0, 0.0, 1.5, 2.5, 3.5 });
+            _eqPresets.Add("Pop", new double[] { -1.5, 2.0, 3.5, 4.0, 2.0, -1.0, -2.0, 1.5, 2.5, 3.0 });
+            _eqPresets.Add("R&B", new double[] { 3.0, 6.0, 4.0, 1.0, -1.0, -1.0, 2.0, 3.0, 2.5, 3.0 });
+            _eqPresets.Add("Rock", new double[] { 6, 4, 2, -1, -2, -1, 2, 4, 5, 6 });
+            _eqPresets.Add("Treble Boost", new double[] { -3.0, -3.0, -3.0, -3.0, -1.5, 2.0, 4.5, 7.0, 9.0, 10.0 });
+            _eqPresets.Add("Vocal", new double[] { -2, -1, 1, 4, 6, 6, 5, 2, 0, -1 });
         }
 
         private void GlobalEqToggle_Click(object? sender, RoutedEventArgs e)
@@ -1154,7 +1160,7 @@ namespace EqualizerPro
                 return;
             }
 
-            var defaultPresets = new HashSet<string> { "Custom", "Acoustic", "Bass Boost", "Electronic", "Vocal", "Rock", "Dance" };
+            var defaultPresets = new HashSet<string> { "Custom", "Acoustic", "Bass Boost", "Classical", "Dance", "Electronic", "Hip-Hop", "Jazz", "Pop", "R&B", "Rock", "Treble Boost", "Vocal" };
             if (defaultPresets.Contains(presetName))
             {
                 MessageBox.Show("Cannot overwrite default presets. Please choose a different name.", "Reserved Name", MessageBoxButton.OK, MessageBoxImage.Warning);
