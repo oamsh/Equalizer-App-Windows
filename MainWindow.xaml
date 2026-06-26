@@ -225,6 +225,48 @@
             </Setter>
         </Style>
 
+        <Style x:Key="BassToggleStyle" TargetType="ToggleButton">
+            <Setter Property="Width" Value="80"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Border" CornerRadius="20" Background="{DynamicResource GlassOverlayBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                            <Grid>
+                                <Border x:Name="Glow" CornerRadius="20" Background="{DynamicResource AccentBrush}" Opacity="0">
+                                    <Border.Effect>
+                                        <DropShadowEffect Color="{DynamicResource AccentColor}" BlurRadius="15" ShadowDepth="0"/>
+                                    </Border.Effect>
+                                </Border>
+                                <TextBlock x:Name="Txt" Text="OFF" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="{DynamicResource MutedTextBrush}" FontWeight="Bold" FontSize="14"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Txt" Property="Text" Value="BASS"/>
+                                <Setter TargetName="Txt" Property="Foreground" Value="White"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Glow" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.2"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="Glow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.2"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="GlassPanel" TargetType="Border">
             <Setter Property="Background" Value="{DynamicResource PanelBgBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
@@ -526,12 +568,17 @@
                             </StackPanel>
 
                             <StackPanel Grid.Row="1" Margin="15,0,15,20">
-                                <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,0,0,20"/>
-                                <TextBlock Text="Analog Fatness" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,0,0,15" ToolTip="Simulates analog saturation and warmth"/>
+                                <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,0,0,15"/>
 
-                                <ToggleButton x:Name="FatModeToggle" Style="{StaticResource FatToggleStyle}" IsChecked="False" Click="FatModeToggle_Click" Margin="0,10,0,10"/>
-
+                                <TextBlock Text="Analog Fatness" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,0,0,5" ToolTip="Simulates analog saturation and warmth"/>
+                                <ToggleButton x:Name="FatModeToggle" Style="{StaticResource FatToggleStyle}" IsChecked="False" Click="FatModeToggle_Click" Margin="0,5,0,5"/>
                                 <TextBlock Text="Saturation / Warmth" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" HorizontalAlignment="Center"/>
+
+                                <Border Height="1" Background="{DynamicResource GlassOverlayBrush}" Margin="20,15,20,15"/>
+
+                                <TextBlock Text="Super Bass" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,0,0,5" ToolTip="Deep punchy bass without distortion"/>
+                                <ToggleButton x:Name="SuperBassToggle" Style="{StaticResource BassToggleStyle}" IsChecked="False" Click="SuperBassToggle_Click" Margin="0,5,0,5"/>
+                                <TextBlock Text="Clean Low-End" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -1159,7 +1206,10 @@
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
-                            <TextBlock Text="Now Playing" FontWeight="SemiBold" FontSize="20" Foreground="{DynamicResource TextBrush}" HorizontalAlignment="Center"/>
+                            <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,0,0,10">
+                                <TextBlock x:Name="PlaybackAppSourceText" Text="Playing from System" Foreground="{DynamicResource AccentBrushLight}" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,2"/>
+                                <TextBlock Text="Now Playing" FontWeight="SemiBold" FontSize="20" Foreground="{DynamicResource TextBrush}" HorizontalAlignment="Center"/>
+                            </StackPanel>
 
                             <Grid Grid.Row="1" Width="250" Height="250" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,10">
 

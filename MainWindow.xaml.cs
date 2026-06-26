@@ -76,8 +76,9 @@ namespace EqualizerPro
         private bool _isUpdatingPreset = false;
         private bool _isEqEnabled = true;
 
-        // Fat Mode Variables
+        // Audio Processing Variables
         private bool _isFatModeEnabled = false;
+        private bool _isSuperBassEnabled = false;
 
         // Visualizer & DB Meter Variables
         private DispatcherTimer _visualizerTimer;
@@ -337,6 +338,15 @@ namespace EqualizerPro
             if (sender is ToggleButton toggle)
             {
                 _isFatModeEnabled = toggle.IsChecked ?? false;
+                ApplyEqToAudioStream();
+            }
+        }
+
+        private void SuperBassToggle_Click(object? sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleButton toggle)
+            {
+                _isSuperBassEnabled = toggle.IsChecked ?? false;
                 ApplyEqToAudioStream();
             }
         }
@@ -667,7 +677,7 @@ namespace EqualizerPro
                 string path = Path.Combine(folder, "custom_presets.ini");
 
                 List<string> lines = new List<string>();
-                var defaultPresets = new HashSet<string> { "Custom", "Acoustic", "Bass Boost", "Electronic", "Vocal", "Rock", "Dance", "Pop", "Classical", "Jazz", "Hip-Hop", "R&B", "Treble Boost" };
+                var defaultPresets = new HashSet<string> { "Custom", "Acoustic", "Bass Boost", "Classical", "Dance", "Electronic", "Hip-Hop", "Jazz", "Pop", "R&B", "Rock", "Treble Boost", "Vocal" };
 
                 foreach (var kvp in _eqPresets)
                 {
@@ -871,10 +881,11 @@ namespace EqualizerPro
                 string falloffValue = (SpectrumFalloffSlider?.Value ?? 40).ToString();
                 string ecoModeState = _isEcoModeEnabled.ToString();
                 string fatModeState = _isFatModeEnabled.ToString();
+                string superBassState = _isSuperBassEnabled.ToString();
 
                 File.WriteAllLines(GetSettingsFilePath(), new string[] {
                     currentPreset, toggleState, darkModeState, accentColorHex,
-                    alwaysOnTopState, minTrayState, startWinState, fpsIndex, falloffValue, ecoModeState, fatModeState
+                    alwaysOnTopState, minTrayState, startWinState, fpsIndex, falloffValue, ecoModeState, fatModeState, superBassState
                 });
             }
             catch { }
@@ -1006,6 +1017,15 @@ namespace EqualizerPro
                         {
                             _isFatModeEnabled = isFat;
                             FatModeToggle.IsChecked = isFat;
+                        }
+                    }
+
+                    if (lines.Length >= 12 && SuperBassToggle != null)
+                    {
+                        if (bool.TryParse(lines[11], out bool isBass))
+                        {
+                            _isSuperBassEnabled = isBass;
+                            SuperBassToggle.IsChecked = isBass;
                         }
                     }
 
@@ -1232,16 +1252,25 @@ namespace EqualizerPro
 
                     if (_isEqEnabled)
                     {
+                        double preampComp = 0.0;
+                        string extraFilters = "";
+
                         if (_isFatModeEnabled)
                         {
-                            double lowBoost = 4.5;
-                            double harmonicBoost = 2.0;
-                            double preampComp = -3.5;
-
-                            eqCommand += $"Preamp: {preampComp:0.0} dB\n";
-                            eqCommand += $"Filter: ON LS Fc 120 Hz Gain {lowBoost:0.0} dB Q 0.7\n";
-                            eqCommand += $"Filter: ON PK Fc 2500 Hz Gain {harmonicBoost:0.0} dB Q 1.0\n";
+                            preampComp -= 3.5;
+                            extraFilters += $"Filter: ON LS Fc 120 Hz Gain 4.5 dB Q 0.7\n";
+                            extraFilters += $"Filter: ON PK Fc 2500 Hz Gain 2.0 dB Q 1.0\n";
                         }
+
+                        if (_isSuperBassEnabled)
+                        {
+                            preampComp -= 5.0;
+                            extraFilters += $"Filter: ON LS Fc 70 Hz Gain 7.0 dB Q 0.8\n";
+                            extraFilters += $"Filter: ON HP Fc 25 Hz\n";
+                        }
+
+                        eqCommand += $"Preamp: {preampComp:0.0} dB\n";
+                        eqCommand += extraFilters;
 
                         eqCommand += $"GraphicEQ: 31 {_eqSliders[0].Value:0.0}; 62 {_eqSliders[1].Value:0.0}; 125 {_eqSliders[2].Value:0.0}; 250 {_eqSliders[3].Value:0.0}; 500 {_eqSliders[4].Value:0.0}; 1000 {_eqSliders[5].Value:0.0}; 2000 {_eqSliders[6].Value:0.0}; 4000 {_eqSliders[7].Value:0.0}; 8000 {_eqSliders[8].Value:0.0}; 16000 {_eqSliders[9].Value:0.0}";
                     }
@@ -1726,6 +1755,42 @@ namespace EqualizerPro
             return geometry;
         }
 
+        // ==========================================
+        // App Source / Friendly Name Logic
+        // ==========================================
+        private string GetFriendlyAppName(string rawId)
+        {
+            if (string.IsNullOrEmpty(rawId)) return "System";
+
+            string lowerId = rawId.ToLowerInvariant();
+
+            if (lowerId.Contains("spotify")) return "Spotify";
+            if (lowerId.Contains("chrome")) return "Google Chrome";
+            if (lowerId.Contains("msedge")) return "Microsoft Edge";
+            if (lowerId.Contains("firefox")) return "Firefox";
+            if (lowerId.Contains("brave")) return "Brave Browser";
+            if (lowerId.Contains("opera")) return "Opera";
+            if (lowerId.Contains("vlc")) return "VLC Media Player";
+            if (lowerId.Contains("discord")) return "Discord";
+            if (lowerId.Contains("wmplayer") || lowerId.Contains("windowsmedia")) return "Windows Media Player";
+            if (lowerId.Contains("itunes")) return "iTunes";
+            if (lowerId.Contains("music.ui")) return "Groove Music";
+            if (lowerId.Contains("netflix")) return "Netflix";
+
+            // Fallback for UWP/AppX packages or standard Exes
+            var parts = rawId.Split('!');
+            string name = parts.Length > 1 ? parts[parts.Length - 1] : rawId;
+
+            if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            {
+                name = name.Substring(0, name.Length - 4);
+                if (name.Length > 0)
+                    name = char.ToUpper(name[0]) + name.Substring(1);
+            }
+
+            return name;
+        }
+
         private void SessionManager_CurrentSessionChanged(GlobalSystemMediaTransportControlsSessionManager sender, CurrentSessionChangedEventArgs args) => UpdateCurrentSession(sender.GetCurrentSession());
 
         private void UpdateCurrentSession(GlobalSystemMediaTransportControlsSession? session)
@@ -1754,6 +1819,7 @@ namespace EqualizerPro
             {
                 _playbackTimer.Stop();
                 Dispatcher.Invoke(() => {
+                    if (PlaybackAppSourceText != null) PlaybackAppSourceText.Text = string.Empty;
                     if (TrackTitle != null) TrackTitle.Text = "Unknown Track";
                     if (TrackArtist != null) TrackArtist.Text = "Unknown Artist";
                     if (TrackImageBrush != null) TrackImageBrush.ImageSource = null;
@@ -1805,6 +1871,9 @@ namespace EqualizerPro
                 {
                     string title = string.IsNullOrEmpty(properties.Title) ? "Unknown Track" : properties.Title;
                     string artist = string.IsNullOrEmpty(properties.Artist) ? "Unknown Artist" : properties.Artist;
+                    string rawAppId = _currentSession.SourceAppUserModelId;
+                    string friendlyAppName = GetFriendlyAppName(rawAppId);
+
                     BitmapImage? bitmapImage = null;
 
                     if (properties.Thumbnail != null)
@@ -1826,6 +1895,7 @@ namespace EqualizerPro
                     }
 
                     Dispatcher.Invoke(() => {
+                        if (PlaybackAppSourceText != null) PlaybackAppSourceText.Text = $"Playing from {friendlyAppName}";
                         if (TrackTitle != null) TrackTitle.Text = title;
                         if (TrackArtist != null) TrackArtist.Text = artist;
 
