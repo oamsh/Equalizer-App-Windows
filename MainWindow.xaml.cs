@@ -1250,9 +1250,6 @@ namespace EqualizerPro
             }
         }
 
-        // ==========================================
-        // FIXED SPATIAL AUDIO PROCESSING LOGIC
-        // ==========================================
         private void ApplyEqToAudioStream()
         {
             try
@@ -1282,8 +1279,6 @@ namespace EqualizerPro
                             extraFilters += $"Filter: ON HP Fc 25 Hz\n";
                         }
 
-                        // FIXED: Direct Phase-Inversion Crossfeed. 
-                        // Bypasses the M/S virtual channel dropping bug in Windows Audio engines.
                         if (_isSpatialSoundEnabled)
                         {
                             extraFilters += "Copy: L_TMP=L R_TMP=R\n";
