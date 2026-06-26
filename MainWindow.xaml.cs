@@ -18,7 +18,6 @@ using Microsoft.Win32;
 using NAudio.Wave;
 using NAudio.CoreAudioApi;
 
-// --- AMBIGUITY FIXES ---
 using Point = System.Windows.Point;
 using Color = System.Windows.Media.Color;
 using Application = System.Windows.Application;
@@ -32,7 +31,6 @@ using Slider = System.Windows.Controls.Slider;
 using Expander = System.Windows.Controls.Expander;
 using ToggleButton = System.Windows.Controls.Primitives.ToggleButton;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
-// -----------------------
 
 namespace EqualizerPro
 {
@@ -79,6 +77,7 @@ namespace EqualizerPro
         // Audio Processing Variables
         private bool _isFatModeEnabled = false;
         private bool _isSuperBassEnabled = false;
+        private bool _isSpatialSoundEnabled = false;
 
         // Visualizer & DB Meter Variables
         private DispatcherTimer _visualizerTimer;
@@ -347,6 +346,15 @@ namespace EqualizerPro
             if (sender is ToggleButton toggle)
             {
                 _isSuperBassEnabled = toggle.IsChecked ?? false;
+                ApplyEqToAudioStream();
+            }
+        }
+
+        private void SpatialSoundToggle_Click(object? sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleButton toggle)
+            {
+                _isSpatialSoundEnabled = toggle.IsChecked ?? false;
                 ApplyEqToAudioStream();
             }
         }
@@ -663,9 +671,6 @@ namespace EqualizerPro
             return Path.Combine(folder, "settings.ini");
         }
 
-        // ==========================================
-        // Custom Presets Persistence & Sub-menu UI
-        // ==========================================
         private void SaveCustomPresets()
         {
             try
@@ -763,7 +768,7 @@ namespace EqualizerPro
             deleteBtn.ToolTip = "Delete Preset";
 
             System.Windows.Shapes.Path pathIcon = new System.Windows.Shapes.Path();
-            pathIcon.Data = Geometry.Parse("M2,2 L10,10 M10,2 L2,10"); // X Icon
+            pathIcon.Data = Geometry.Parse("M2,2 L10,10 M10,2 L2,10");
             pathIcon.Stroke = (SolidColorBrush)FindResource("MutedTextBrush");
             pathIcon.StrokeThickness = 1.5;
             pathIcon.Stretch = Stretch.Uniform;
@@ -849,9 +854,6 @@ namespace EqualizerPro
             }
         }
 
-        // ==========================================
-        // Textbox Edit Focus logic
-        // ==========================================
         private void EqTextBox_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
@@ -882,10 +884,12 @@ namespace EqualizerPro
                 string ecoModeState = _isEcoModeEnabled.ToString();
                 string fatModeState = _isFatModeEnabled.ToString();
                 string superBassState = _isSuperBassEnabled.ToString();
+                string spatialState = _isSpatialSoundEnabled.ToString();
 
                 File.WriteAllLines(GetSettingsFilePath(), new string[] {
                     currentPreset, toggleState, darkModeState, accentColorHex,
-                    alwaysOnTopState, minTrayState, startWinState, fpsIndex, falloffValue, ecoModeState, fatModeState, superBassState
+                    alwaysOnTopState, minTrayState, startWinState, fpsIndex, falloffValue,
+                    ecoModeState, fatModeState, superBassState, spatialState
                 });
             }
             catch { }
@@ -1029,6 +1033,15 @@ namespace EqualizerPro
                         }
                     }
 
+                    if (lines.Length >= 13 && SpatialSoundToggle != null)
+                    {
+                        if (bool.TryParse(lines[12], out bool isSpatial))
+                        {
+                            _isSpatialSoundEnabled = isSpatial;
+                            SpatialSoundToggle.IsChecked = isSpatial;
+                        }
+                    }
+
                     SyncThemeVariablesToTarget();
                 }
             }
@@ -1142,9 +1155,6 @@ namespace EqualizerPro
             ApplyEqToAudioStream();
         }
 
-        // ==========================================
-        // Save Preset & Toast Logic
-        // ==========================================
         private void SavePresetBtn_Click(object sender, RoutedEventArgs e)
         {
             if (SavePresetOverlay == null || SavePresetScale == null) return;
@@ -1240,6 +1250,9 @@ namespace EqualizerPro
             }
         }
 
+        // ==========================================
+        // FIXED SPATIAL AUDIO PROCESSING LOGIC
+        // ==========================================
         private void ApplyEqToAudioStream()
         {
             try
@@ -1267,6 +1280,16 @@ namespace EqualizerPro
                             preampComp -= 5.0;
                             extraFilters += $"Filter: ON LS Fc 70 Hz Gain 7.0 dB Q 0.8\n";
                             extraFilters += $"Filter: ON HP Fc 25 Hz\n";
+                        }
+
+                        // FIXED: Direct Phase-Inversion Crossfeed. 
+                        // Bypasses the M/S virtual channel dropping bug in Windows Audio engines.
+                        if (_isSpatialSoundEnabled)
+                        {
+                            extraFilters += "Copy: L_TMP=L R_TMP=R\n";
+                            extraFilters += "Copy: L=L_TMP+-0.4*R_TMP R=R_TMP+-0.4*L_TMP\n";
+                            extraFilters += "Preamp: 2.5 dB\n";
+                            extraFilters += "Filter: ON PK Fc 6000 Hz Gain 2.0 dB Q 1.0\n";
                         }
 
                         eqCommand += $"Preamp: {preampComp:0.0} dB\n";
@@ -1755,9 +1778,6 @@ namespace EqualizerPro
             return geometry;
         }
 
-        // ==========================================
-        // App Source / Friendly Name Logic
-        // ==========================================
         private string GetFriendlyAppName(string rawId)
         {
             if (string.IsNullOrEmpty(rawId)) return "System";
@@ -1777,7 +1797,6 @@ namespace EqualizerPro
             if (lowerId.Contains("music.ui")) return "Groove Music";
             if (lowerId.Contains("netflix")) return "Netflix";
 
-            // Fallback for UWP/AppX packages or standard Exes
             var parts = rawId.Split('!');
             string name = parts.Length > 1 ? parts[parts.Length - 1] : rawId;
 
