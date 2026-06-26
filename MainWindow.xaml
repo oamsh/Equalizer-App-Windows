@@ -40,6 +40,74 @@
             <GradientStop Color="#EF4444" Offset="0.95"/>
         </LinearGradientBrush>
 
+        <Style x:Key="PresetToggleStyle" TargetType="ToggleButton">
+            <Setter Property="Background" Value="{DynamicResource GlassOverlayBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="30"/>
+                                </Grid.ColumnDefinitions>
+                                <ContentPresenter VerticalAlignment="Center" Margin="10,0"/>
+                                <Path Grid.Column="1" Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.5" Data="M0,0 L4,4 L8,0" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,2,0,0"/>
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="DropdownItemStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="DropdownActionBtnStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="GlassTextBox" TargetType="TextBox">
             <Setter Property="Background" Value="{DynamicResource GlassOverlayBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
@@ -480,15 +548,56 @@
 
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                 <TextBlock Text="Select Preset" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,15,0"/>
-                                <ComboBox x:Name="PresetSelector" Width="160" Height="32" SelectedIndex="0" Style="{StaticResource DarkComboBox}" SelectionChanged="PresetSelector_SelectionChanged">
-                                    <ComboBoxItem Content="Custom"/>
-                                    <ComboBoxItem Content="Acoustic"/>
-                                    <ComboBoxItem Content="Bass Boost"/>
-                                    <ComboBoxItem Content="Electronic"/>
-                                    <ComboBoxItem Content="Vocal"/>
-                                    <ComboBoxItem Content="Rock"/>
-                                    <ComboBoxItem Content="Dance"/>
-                                </ComboBox>
+
+                                <Grid>
+                                    <ToggleButton x:Name="PresetDropdownToggle" Width="160" Height="32" Style="{StaticResource PresetToggleStyle}" Content="Custom"/>
+
+                                    <Popup x:Name="PresetPopup" IsOpen="{Binding IsChecked, ElementName=PresetDropdownToggle}" PlacementTarget="{Binding ElementName=PresetDropdownToggle}" Placement="Bottom" AllowsTransparency="True" StaysOpen="False" PopupAnimation="Slide" Closed="PresetPopup_Closed">
+                                        <Border Background="{DynamicResource WindowBgBrush}" BorderBrush="{DynamicResource HoverBrush}" BorderThickness="1" CornerRadius="6" MinWidth="160" Margin="0,2,0,0">
+                                            <Grid Margin="0,4">
+
+                                                <StackPanel x:Name="MainPresetList" Visibility="Visible">
+
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="30"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Button Content="Custom" Style="{StaticResource DropdownItemStyle}" Click="PresetItem_Click"/>
+                                                        <Button Grid.Column="1" Style="{StaticResource DropdownActionBtnStyle}" Click="OpenCustomMenu_Click">
+                                                            <Path Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.5" Data="M0,0 L4,4 L0,8" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Button>
+                                                    </Grid>
+
+                                                    <Button Style="{StaticResource DropdownItemStyle}" Content="Acoustic" Click="PresetItem_Click"/>
+                                                    <Button Style="{StaticResource DropdownItemStyle}" Content="Bass Boost" Click="PresetItem_Click"/>
+                                                    <Button Style="{StaticResource DropdownItemStyle}" Content="Electronic" Click="PresetItem_Click"/>
+                                                    <Button Style="{StaticResource DropdownItemStyle}" Content="Vocal" Click="PresetItem_Click"/>
+                                                    <Button Style="{StaticResource DropdownItemStyle}" Content="Rock" Click="PresetItem_Click"/>
+                                                    <Button Style="{StaticResource DropdownItemStyle}" Content="Dance" Click="PresetItem_Click"/>
+                                                </StackPanel>
+
+                                                <StackPanel x:Name="CustomPresetList" Visibility="Collapsed">
+
+                                                    <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Margin="0,0,0,4">
+                                                        <Button Style="{StaticResource DropdownItemStyle}" Click="CloseCustomMenu_Click" Foreground="{DynamicResource AccentBrushLight}">
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <Path Stroke="{DynamicResource AccentBrushLight}" StrokeThickness="1.5" Data="M4,0 L0,4 L4,8" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                                <TextBlock Text="Back" VerticalAlignment="Center"/>
+                                                            </StackPanel>
+                                                        </Button>
+                                                    </Border>
+
+                                                    <StackPanel x:Name="CustomPresetsContainer">
+                                                    </StackPanel>
+
+                                                    <TextBlock x:Name="NoCustomPresetsText" Text="No custom presets saved." Foreground="{DynamicResource MutedTextBrush}" FontSize="11" FontStyle="Italic" HorizontalAlignment="Center" Margin="0,10,0,10" Visibility="Collapsed"/>
+                                                </StackPanel>
+
+                                            </Grid>
+                                        </Border>
+                                    </Popup>
+                                </Grid>
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">

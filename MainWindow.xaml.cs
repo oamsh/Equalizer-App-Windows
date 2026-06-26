@@ -1,7 +1,4 @@
-﻿using Microsoft.Win32;
-using NAudio.CoreAudioApi;
-using NAudio.Wave;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -17,15 +14,23 @@ using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Windows.Media.Control;
-using Windows.UI.Notifications;
-using Application = System.Windows.Application;
-using Color = System.Windows.Media.Color;
-using ColorConverter = System.Windows.Media.ColorConverter;
-using ComboBox = System.Windows.Controls.ComboBox;
-using ComboBoxItem = System.Windows.Controls.ComboBoxItem;
-using MessageBox = System.Windows.MessageBox;
+using Microsoft.Win32;
+using NAudio.Wave;
+using NAudio.CoreAudioApi;
+
 // --- AMBIGUITY FIXES ---
 using Point = System.Windows.Point;
+using Color = System.Windows.Media.Color;
+using Application = System.Windows.Application;
+using ColorConverter = System.Windows.Media.ColorConverter;
+using MessageBox = System.Windows.MessageBox;
+using ComboBox = System.Windows.Controls.ComboBox;
+using ComboBoxItem = System.Windows.Controls.ComboBoxItem;
+using Button = System.Windows.Controls.Button;
+using TextBox = System.Windows.Controls.TextBox;
+using Slider = System.Windows.Controls.Slider;
+using Expander = System.Windows.Controls.Expander;
+using ToggleButton = System.Windows.Controls.Primitives.ToggleButton;
 // -----------------------
 
 namespace EqualizerPro
@@ -158,6 +163,7 @@ namespace EqualizerPro
         {
             EnableGlassmorphismBlur();
 
+            LoadCustomPresets();
             LoadSettings();
             PushColorsToUI();
 
@@ -220,7 +226,6 @@ namespace EqualizerPro
                 if (CompactEqToggle != null) CompactEqToggle.Visibility = Visibility.Visible;
                 if (CompactPlaybackPanel != null) CompactPlaybackPanel.Visibility = Visibility.Visible;
 
-                // Increased width and height slightly to give shadows room
                 DoubleAnimation widthAnim = new DoubleAnimation(this.ActualWidth, 680, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
                 DoubleAnimation heightAnim = new DoubleAnimation(this.ActualHeight, 260, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
 
@@ -558,8 +563,8 @@ namespace EqualizerPro
             _notifyIcon.DoubleClick += (s, args) => ShowFromTray();
 
             var contextMenu = new System.Windows.Forms.ContextMenuStrip();
-            contextMenu.Items.Add("Open Equalizer Pro", null, (s, args) => ShowFromTray());
-            contextMenu.Items.Add("Exit", null, (s, args) => ForceExit());
+            contextMenu.Items.Add("Open Equalizer Pro", (System.Drawing.Image?)null, (s, args) => ShowFromTray());
+            contextMenu.Items.Add("Exit", (System.Drawing.Image?)null, (s, args) => ForceExit());
             _notifyIcon.ContextMenuStrip = contextMenu;
         }
 
@@ -647,11 +652,198 @@ namespace EqualizerPro
             return Path.Combine(folder, "settings.ini");
         }
 
+        // ==========================================
+        // Custom Presets Persistence & Sub-menu UI
+        // ==========================================
+        private void SaveCustomPresets()
+        {
+            try
+            {
+                string appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                string folder = Path.Combine(appData, "EqualizerPro");
+                if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+
+                string path = Path.Combine(folder, "custom_presets.ini");
+
+                List<string> lines = new List<string>();
+                var defaultPresets = new HashSet<string> { "Custom", "Acoustic", "Bass Boost", "Electronic", "Vocal", "Rock", "Dance" };
+
+                foreach (var kvp in _eqPresets)
+                {
+                    if (!defaultPresets.Contains(kvp.Key))
+                    {
+                        string vals = string.Join(",", kvp.Value);
+                        lines.Add($"{kvp.Key}={vals}");
+                    }
+                }
+                File.WriteAllLines(path, lines);
+            }
+            catch { }
+        }
+
+        private void LoadCustomPresets()
+        {
+            try
+            {
+                string appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                string folder = Path.Combine(appData, "EqualizerPro");
+                string path = Path.Combine(folder, "custom_presets.ini");
+
+                if (CustomPresetsContainer != null) CustomPresetsContainer.Children.Clear();
+
+                if (File.Exists(path))
+                {
+                    string[] lines = File.ReadAllLines(path);
+                    foreach (string line in lines)
+                    {
+                        var parts = line.Split('=');
+                        if (parts.Length == 2)
+                        {
+                            string name = parts[0].Trim();
+                            string[] valStrings = parts[1].Split(',');
+                            if (valStrings.Length == 10 && !string.IsNullOrEmpty(name))
+                            {
+                                double[] vals = new double[10];
+                                bool parsedAll = true;
+                                for (int i = 0; i < 10; i++)
+                                {
+                                    if (!double.TryParse(valStrings[i], out vals[i]))
+                                    {
+                                        parsedAll = false;
+                                        break;
+                                    }
+                                }
+
+                                if (parsedAll && !_eqPresets.ContainsKey(name))
+                                {
+                                    _eqPresets.Add(name, vals);
+                                    AddCustomPresetToUI(name);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                UpdateEmptyCustomText();
+            }
+            catch { }
+        }
+
+        private void AddCustomPresetToUI(string name)
+        {
+            if (CustomPresetsContainer == null) return;
+
+            Grid grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(30) });
+
+            Button selectBtn = new Button();
+            selectBtn.Style = (Style)FindResource("DropdownItemStyle");
+            selectBtn.Content = name;
+            selectBtn.Click += (s, e) => {
+                SelectPreset(name);
+                if (PresetDropdownToggle != null) PresetDropdownToggle.IsChecked = false;
+            };
+            Grid.SetColumn(selectBtn, 0);
+            grid.Children.Add(selectBtn);
+
+            Button deleteBtn = new Button();
+            deleteBtn.Style = (Style)FindResource("DropdownActionBtnStyle");
+            deleteBtn.ToolTip = "Delete Preset";
+
+            System.Windows.Shapes.Path pathIcon = new System.Windows.Shapes.Path();
+            pathIcon.Data = Geometry.Parse("M2,2 L10,10 M10,2 L2,10"); // X Icon
+            pathIcon.Stroke = (SolidColorBrush)FindResource("MutedTextBrush");
+            pathIcon.StrokeThickness = 1.5;
+            pathIcon.Stretch = Stretch.Uniform;
+            pathIcon.Width = 9;
+            pathIcon.Height = 9;
+            deleteBtn.Content = pathIcon;
+
+            deleteBtn.Click += (s, e) => {
+                CustomPresetsContainer.Children.Remove(grid);
+                _eqPresets.Remove(name);
+                SaveCustomPresets();
+                UpdateEmptyCustomText();
+
+                if (PresetDropdownToggle != null && PresetDropdownToggle.Content?.ToString() == name)
+                {
+                    SelectPreset("Custom");
+                }
+            };
+
+            Grid.SetColumn(deleteBtn, 1);
+            grid.Children.Add(deleteBtn);
+
+            CustomPresetsContainer.Children.Add(grid);
+        }
+
+        private void UpdateEmptyCustomText()
+        {
+            if (NoCustomPresetsText != null && CustomPresetsContainer != null)
+            {
+                NoCustomPresetsText.Visibility = CustomPresetsContainer.Children.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            }
+        }
+
+        private void OpenCustomMenu_Click(object sender, RoutedEventArgs e)
+        {
+            if (MainPresetList != null && CustomPresetList != null)
+            {
+                MainPresetList.Visibility = Visibility.Collapsed;
+                CustomPresetList.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void CloseCustomMenu_Click(object sender, RoutedEventArgs e)
+        {
+            if (MainPresetList != null && CustomPresetList != null)
+            {
+                CustomPresetList.Visibility = Visibility.Collapsed;
+                MainPresetList.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void PresetPopup_Closed(object sender, EventArgs e)
+        {
+            // Reset to main view whenever popup closes
+            if (MainPresetList != null && CustomPresetList != null)
+            {
+                CustomPresetList.Visibility = Visibility.Collapsed;
+                MainPresetList.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void PresetItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Content != null)
+            {
+                string presetName = btn.Content.ToString() ?? "Custom";
+                SelectPreset(presetName);
+
+                if (PresetDropdownToggle != null) PresetDropdownToggle.IsChecked = false;
+            }
+        }
+
+        private void SelectPreset(string presetName)
+        {
+            if (_eqPresets.TryGetValue(presetName, out double[]? values))
+            {
+                _isUpdatingPreset = true;
+                if (PresetDropdownToggle != null) PresetDropdownToggle.Content = presetName;
+
+                for (int i = 0; i < 10; i++) _eqSliders[i].Value = values[i];
+
+                if (_isEqEnabled) ApplyEqToAudioStream();
+                _isUpdatingPreset = false;
+            }
+        }
+
         private void SaveSettings()
         {
             try
             {
-                string currentPreset = (PresetSelector.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Custom";
+                string currentPreset = PresetDropdownToggle?.Content?.ToString() ?? "Custom";
                 string toggleState = _isEqEnabled.ToString();
                 string darkModeState = _isDarkMode.ToString();
                 string accentColorHex = $"#{_targetAccent.A:X2}{_targetAccent.R:X2}{_targetAccent.G:X2}{_targetAccent.B:X2}";
@@ -683,14 +875,7 @@ namespace EqualizerPro
                     if (lines.Length >= 1)
                     {
                         string savedPreset = lines[0].Trim();
-                        foreach (ComboBoxItem item in PresetSelector.Items)
-                        {
-                            if (item.Content.ToString() == savedPreset)
-                            {
-                                PresetSelector.SelectedItem = item;
-                                break;
-                            }
-                        }
+                        SelectPreset(savedPreset);
                     }
 
                     if (lines.Length >= 2)
@@ -721,14 +906,14 @@ namespace EqualizerPro
                         try
                         {
                             _targetAccent = (Color)ColorConverter.ConvertFromString(lines[3].Trim());
-                            string themeName = GetThemeNameFromColor(_targetAccent);
+                            string? themeName = GetThemeNameFromColor(_targetAccent);
                             bool foundMatch = false;
 
                             if (themeName != null)
                             {
                                 foreach (ComboBoxItem item in ThemeSelector.Items)
                                 {
-                                    if (item.Content.ToString() == themeName)
+                                    if (item.Content?.ToString() == themeName)
                                     {
                                         ThemeSelector.SelectedItem = item;
                                         foundMatch = true;
@@ -813,7 +998,7 @@ namespace EqualizerPro
             catch { }
         }
 
-        private string GetThemeNameFromColor(Color c)
+        private string? GetThemeNameFromColor(Color c)
         {
             if (ColorsAreClose(c, Color.FromRgb(92, 97, 255))) return "Blue (Default)";
             if (ColorsAreClose(c, Color.FromRgb(255, 71, 87))) return "Red";
@@ -952,6 +1137,13 @@ namespace EqualizerPro
                 return;
             }
 
+            var defaultPresets = new HashSet<string> { "Custom", "Acoustic", "Bass Boost", "Electronic", "Vocal", "Rock", "Dance" };
+            if (defaultPresets.Contains(presetName))
+            {
+                MessageBox.Show("Cannot overwrite default presets. Please choose a different name.", "Reserved Name", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             CloseSavePreset_Click(null, null);
 
             double[] currentValues = new double[10];
@@ -963,19 +1155,18 @@ namespace EqualizerPro
             if (_eqPresets.ContainsKey(presetName))
             {
                 _eqPresets[presetName] = currentValues;
+                // Update UI visually if it was overwritten
+                SelectPreset(presetName);
             }
             else
             {
                 _eqPresets.Add(presetName, currentValues);
-
-                var newItem = new ComboBoxItem { Content = presetName };
-                PresetSelector.Items.Add(newItem);
-
-                _isUpdatingPreset = true;
-                PresetSelector.SelectedItem = newItem;
-                _isUpdatingPreset = false;
+                AddCustomPresetToUI(presetName);
+                SelectPreset(presetName);
             }
 
+            UpdateEmptyCustomText();
+            SaveCustomPresets();
             ShowToast($"Preset '{presetName}' Saved!");
         }
 
@@ -996,31 +1187,12 @@ namespace EqualizerPro
             ToastNotification.BeginAnimation(UIElement.OpacityProperty, fadeOut);
         }
 
-        private void PresetSelector_SelectionChanged(object? sender, SelectionChangedEventArgs e)
-        {
-            if (_isUpdatingPreset || PresetSelector == null || _eqSliders == null) return;
-
-            var selected = PresetSelector.SelectedItem as ComboBoxItem;
-            if (selected == null) return;
-
-            string presetName = selected.Content.ToString();
-            if (_eqPresets.TryGetValue(presetName, out double[]? values))
-            {
-                _isUpdatingPreset = true;
-
-                for (int i = 0; i < 10; i++) _eqSliders[i].Value = values[i];
-
-                if (_isEqEnabled) ApplyEqToAudioStream();
-                _isUpdatingPreset = false;
-            }
-        }
-
         private void EqSlider_ValueChanged(object? sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            if (!_isUpdatingPreset && PresetSelector != null)
+            if (!_isUpdatingPreset && PresetDropdownToggle != null)
             {
                 _isUpdatingPreset = true;
-                PresetSelector.SelectedIndex = 0;
+                PresetDropdownToggle.Content = "Custom";
                 if (_isEqEnabled) ApplyEqToAudioStream();
                 _isUpdatingPreset = false;
             }
@@ -1244,7 +1416,7 @@ namespace EqualizerPro
             var selectedItem = (ComboBoxItem)ThemeSelector.SelectedItem;
             if (selectedItem == null) return;
 
-            string themeName = selectedItem.Content.ToString();
+            string themeName = selectedItem.Content?.ToString() ?? "";
             Point origin = ThemeSelector.TransformToAncestor(this).Transform(new Point(ThemeSelector.ActualWidth / 2, ThemeSelector.ActualHeight / 2));
 
             TriggerWaveTransition(origin, () =>
@@ -1611,7 +1783,7 @@ namespace EqualizerPro
                 {
                     string title = string.IsNullOrEmpty(properties.Title) ? "Unknown Track" : properties.Title;
                     string artist = string.IsNullOrEmpty(properties.Artist) ? "Unknown Artist" : properties.Artist;
-                    BitmapImage bitmapImage = null;
+                    BitmapImage? bitmapImage = null;
 
                     if (properties.Thumbnail != null)
                     {
@@ -1809,9 +1981,9 @@ namespace EqualizerPro
 
         private async void SeekSlider_DragCompleted(object? sender, DragCompletedEventArgs e)
         {
-            if (_currentSession != null && SeekSlider != null)
+            if (_currentSession != null && SeekSlider != null && sender is Slider slider)
             {
-                var newPosition = TimeSpan.FromSeconds(((Slider)sender).Value);
+                var newPosition = TimeSpan.FromSeconds(slider.Value);
                 await _currentSession.TryChangePlaybackPositionAsync(newPosition.Ticks);
             }
             _isDraggingSeekbar = false;
