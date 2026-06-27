@@ -158,9 +158,7 @@ namespace EqualizerPro
             LoadCustomPresets();
             LoadSettings();
 
-            // Instantly apply static colors and DWM on load, avoiding the lag loop.
             PushColorsToUI();
-
             LoadProfileImage();
 
             try
@@ -199,6 +197,88 @@ namespace EqualizerPro
             _isLoadingSettings = false;
         }
 
+        private void SidebarToggleBtn_Click(object sender, RoutedEventArgs e)
+        {
+            bool isCollapsed = SidebarToggleBtn.IsChecked ?? false;
+
+            // Animate Sidebar Width
+            DoubleAnimation widthAnim = new DoubleAnimation
+            {
+                To = isCollapsed ? 80 : 220,
+                Duration = TimeSpan.FromMilliseconds(300),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
+            };
+            SidebarBorder.BeginAnimation(WidthProperty, widthAnim);
+
+            // Animate Arrow Icon
+            DoubleAnimation rotateAnim = new DoubleAnimation
+            {
+                To = isCollapsed ? 180 : 0,
+                Duration = TimeSpan.FromMilliseconds(300),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
+            };
+            SidebarArrowTransform.BeginAnimation(RotateTransform.AngleProperty, rotateAnim);
+
+            // Hide/Show Text Elements
+            Visibility textVis = isCollapsed ? Visibility.Collapsed : Visibility.Visible;
+
+            if (NavEqActiveText != null) NavEqActiveText.Visibility = textVis;
+            if (NavEqText != null) NavEqText.Visibility = textVis;
+            if (NavPlaybackActiveText != null) NavPlaybackActiveText.Visibility = textVis;
+            if (NavPlaybackText != null) NavPlaybackText.Visibility = textVis;
+            if (RecordTimeText != null) RecordTimeText.Visibility = textVis;
+            if (NavRecordText != null) NavRecordText.Visibility = textVis;
+            if (NavSettingsActiveText != null) NavSettingsActiveText.Visibility = textVis;
+            if (NavSettingsText != null) NavSettingsText.Visibility = textVis;
+            if (NavAboutText != null) NavAboutText.Visibility = textVis;
+
+            // Swap to/from Compact Pro Features view
+            if (isCollapsed)
+            {
+                if (FatExpandedView != null) FatExpandedView.Visibility = Visibility.Collapsed;
+                if (FatCollapsedView != null) FatCollapsedView.Visibility = Visibility.Visible;
+
+                if (BassExpandedView != null) BassExpandedView.Visibility = Visibility.Collapsed;
+                if (BassCollapsedView != null) BassCollapsedView.Visibility = Visibility.Visible;
+
+                if (SpatialExpandedView != null) SpatialExpandedView.Visibility = Visibility.Collapsed;
+                if (SpatialCollapsedView != null) SpatialCollapsedView.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                if (FatExpandedView != null) FatExpandedView.Visibility = Visibility.Visible;
+                if (FatCollapsedView != null) FatCollapsedView.Visibility = Visibility.Collapsed;
+
+                if (BassExpandedView != null) BassExpandedView.Visibility = Visibility.Visible;
+                if (BassCollapsedView != null) BassCollapsedView.Visibility = Visibility.Collapsed;
+
+                if (SpatialExpandedView != null) SpatialExpandedView.Visibility = Visibility.Visible;
+                if (SpatialCollapsedView != null) SpatialCollapsedView.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void EqExpandBtn_Click(object sender, RoutedEventArgs e)
+        {
+            bool isExpanded = EqExpandBtn.IsChecked ?? false;
+
+            if (isExpanded)
+            {
+                VisualizersContainer.Visibility = Visibility.Collapsed;
+                EqVisualizersRow.Height = new GridLength(0);
+
+                DoubleAnimation rotateAnim = new DoubleAnimation(180, TimeSpan.FromMilliseconds(200));
+                EqExpandIconTransform.BeginAnimation(RotateTransform.AngleProperty, rotateAnim);
+            }
+            else
+            {
+                VisualizersContainer.Visibility = Visibility.Visible;
+                EqVisualizersRow.Height = new GridLength(1.2, GridUnitType.Star);
+
+                DoubleAnimation rotateAnim = new DoubleAnimation(0, TimeSpan.FromMilliseconds(200));
+                EqExpandIconTransform.BeginAnimation(RotateTransform.AngleProperty, rotateAnim);
+            }
+        }
+
         private void CompactModeBtn_Click(object? sender, RoutedEventArgs e)
         {
             _isCompactMode = !_isCompactMode;
@@ -208,6 +288,7 @@ namespace EqualizerPro
                 CompactModeBtn.Content = "🗖";
 
                 SidebarBorder.Visibility = Visibility.Collapsed;
+                if (SidebarToggleBtn != null) SidebarToggleBtn.Visibility = Visibility.Collapsed;
                 EqContentPanel.Visibility = Visibility.Collapsed;
                 if (PlaybackContentPanel != null) PlaybackContentPanel.Visibility = Visibility.Collapsed;
                 SettingsContentPanel.Visibility = Visibility.Collapsed;
@@ -231,6 +312,7 @@ namespace EqualizerPro
                 if (CompactPlaybackPanel != null) CompactPlaybackPanel.Visibility = Visibility.Collapsed;
 
                 SidebarBorder.Visibility = Visibility.Visible;
+                if (SidebarToggleBtn != null) SidebarToggleBtn.Visibility = Visibility.Visible;
                 if (AppTitleText != null) AppTitleText.Visibility = Visibility.Visible;
 
                 if (_activePanel == 0) EqContentPanel.Visibility = Visibility.Visible;
@@ -515,18 +597,15 @@ namespace EqualizerPro
             NavRecordActive.Visibility = Visibility.Collapsed;
             NavRecordBtn.Visibility = Visibility.Visible;
 
-            // Added '!' to safely bypass the null warning (CS8625)
             RecordBlinkDot.BeginAnimation(UIElement.OpacityProperty, null!);
             RecordBlinkDot.Opacity = 1.0;
 
             if (RecordBlinkDot.Effect is DropShadowEffect glow)
             {
-                // Added '!' to safely bypass the null warning
                 glow.BeginAnimation(DropShadowEffect.BlurRadiusProperty, null!);
             }
             RecordBlinkDot.Effect = null;
 
-            // Explicitly using the WPF Brush namespace to resolve the CS0104 error
             NavRecordActive.Background = (System.Windows.Media.Brush)FindResource("GlassOverlayBrush");
         }
 
@@ -1544,9 +1623,6 @@ namespace EqualizerPro
             return Math.Abs(c1.A - c2.A) < 2 && Math.Abs(c1.R - c2.R) < 2 && Math.Abs(c1.G - c2.G) < 2 && Math.Abs(c1.B - c2.B) < 2;
         }
 
-        // ==========================================
-        // ADVANCED GLASSMORPHISM LOGIC
-        // ==========================================
         private void PushColorsToUI()
         {
             try
@@ -1654,9 +1730,6 @@ namespace EqualizerPro
             catch { }
         }
 
-        // ==========================================
-        // OPTIMIZED VISUALIZER RENDERING
-        // ==========================================
         private void VisualizerTimer_Tick(object? sender, EventArgs e)
         {
             float rawPeak = _isEcoModeEnabled ? 0f : SystemVolumeManager.GetPeakValue();
@@ -1717,7 +1790,6 @@ namespace EqualizerPro
 
                     if (_spectrumStyle == 0 && EqSpectrumGrid.Children.Count > i && EqSpectrumGrid.Children[i] is Border border)
                     {
-                        // Performance saving: only trigger layout if visually noticeable
                         if (Math.Abs(border.Height - _spectrumCurrents[i]) > 0.5)
                         {
                             border.Height = _spectrumCurrents[i];
@@ -1813,7 +1885,6 @@ namespace EqualizerPro
             if (EqFreqResponseLineGlow != null) EqFreqResponseLineGlow.Data = lineGeometry;
         }
 
-        // Extremely fast StreamGeometry builder replacing heavy PathGeometry
         private Geometry CreateSmoothCurve(Point[] points, bool isClosed, Point bottomRight = default, Point bottomLeft = default)
         {
             StreamGeometry geometry = new StreamGeometry();
@@ -1848,7 +1919,6 @@ namespace EqualizerPro
                 }
             }
 
-            // This freeze prevents continuous WPF memory allocations and eliminates visualizer lag
             geometry.Freeze();
             return geometry;
         }

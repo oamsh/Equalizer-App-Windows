@@ -40,6 +40,27 @@
             <GradientStop Color="#EF4444" Offset="0.95"/>
         </LinearGradientBrush>
 
+        <Style x:Key="CircleToggleStyle" TargetType="ToggleButton">
+            <Setter Property="Background" Value="{DynamicResource PanelBgBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="15">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="PresetToggleStyle" TargetType="ToggleButton">
             <Setter Property="Background" Value="{DynamicResource GlassOverlayBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
@@ -478,102 +499,136 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
-                    <Border x:Name="SidebarBorder" Grid.Column="0" Width="220" Style="{StaticResource GlassPanel}" Margin="10,0,10,10">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
+                    <Grid Grid.Column="0" HorizontalAlignment="Left" Margin="10,0,10,10">
+                        <Border x:Name="SidebarBorder" Width="220" Style="{StaticResource GlassPanel}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
 
-                            <StackPanel Grid.Row="0" Margin="10,20,10,0">
+                                <StackPanel Grid.Row="0" Margin="10,20,10,0">
 
-                                <Border x:Name="NavEqActive" Style="{StaticResource GlassOverlay}" Padding="15,12" Margin="0,0,0,5" Visibility="Visible">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Path Stroke="{DynamicResource AccentBrush}" StrokeThickness="1.5" Stretch="Uniform" Width="14" Height="14" Data="M2,4 L2,14 M8,2 L8,14 M14,6 L14,14 M0,4 L4,4 M6,2 L10,2 M12,6 L16,6"/>
-                                        <TextBlock Text="Equalizer" Foreground="{DynamicResource TextBrush}" Margin="15,0,0,0" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Border>
-                                <Button x:Name="NavEqBtn" Style="{StaticResource DarkButton}" BorderThickness="0" Padding="15,12" HorizontalContentAlignment="Left" Margin="0,0,0,5" Click="EqualizerBtn_Click" Visibility="Collapsed">
-                                    <StackPanel Orientation="Horizontal">
-                                        <Path Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.5" Stretch="Uniform" Width="14" Height="14" Data="M2,4 L2,14 M8,2 L8,14 M14,6 L14,14 M0,4 L4,4 M6,2 L10,2 M12,6 L16,6"/>
-                                        <TextBlock Text="Equalizer" Margin="15,0,0,0" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
+                                    <Border x:Name="NavEqActive" Style="{StaticResource GlassOverlay}" Padding="15,12" Margin="0,0,0,5" Visibility="Visible">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Path Stroke="{DynamicResource AccentBrush}" StrokeThickness="1.5" Stretch="Uniform" Width="14" Height="14" Data="M2,4 L2,14 M8,2 L8,14 M14,6 L14,14 M0,4 L4,4 M6,2 L10,2 M12,6 L16,6"/>
+                                            <TextBlock x:Name="NavEqActiveText" Text="Equalizer" Foreground="{DynamicResource TextBrush}" Margin="15,0,0,0" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Button x:Name="NavEqBtn" Style="{StaticResource DarkButton}" BorderThickness="0" Padding="15,12" HorizontalContentAlignment="Left" Margin="0,0,0,5" Click="EqualizerBtn_Click" Visibility="Collapsed">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Path Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.5" Stretch="Uniform" Width="14" Height="14" Data="M2,4 L2,14 M8,2 L8,14 M14,6 L14,14 M0,4 L4,4 M6,2 L10,2 M12,6 L16,6"/>
+                                            <TextBlock x:Name="NavEqText" Text="Equalizer" Margin="15,0,0,0" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
 
-                                <Border x:Name="NavPlaybackActive" Style="{StaticResource GlassOverlay}" Padding="15,12" Margin="0,0,0,5" Visibility="Collapsed">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Path Stroke="{DynamicResource AccentBrush}" StrokeThickness="1.5" Fill="Transparent" Stretch="Uniform" Width="14" Height="14" Data="M8,1 A7,7 0 1,1 7.9,1 M6,4 L11,8 L6,12 Z"/>
-                                        <TextBlock Text="Playback" Foreground="{DynamicResource TextBrush}" Margin="15,0,0,0" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Border>
-                                <Button x:Name="NavPlaybackBtn" Style="{StaticResource DarkButton}" BorderThickness="0" Padding="15,12" HorizontalContentAlignment="Left" Margin="0,0,0,5" Click="PlaybackNavBtn_Click">
-                                    <StackPanel Orientation="Horizontal">
-                                        <Path Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.5" Fill="Transparent" Stretch="Uniform" Width="14" Height="14" Data="M8,1 A7,7 0 1,1 7.9,1 M6,4 L11,8 L6,12 Z"/>
-                                        <TextBlock Text="Playback" Margin="15,0,0,0" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
+                                    <Border x:Name="NavPlaybackActive" Style="{StaticResource GlassOverlay}" Padding="15,12" Margin="0,0,0,5" Visibility="Collapsed">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Path Stroke="{DynamicResource AccentBrush}" StrokeThickness="1.5" Fill="Transparent" Stretch="Uniform" Width="14" Height="14" Data="M8,1 A7,7 0 1,1 7.9,1 M6,4 L11,8 L6,12 Z"/>
+                                            <TextBlock x:Name="NavPlaybackActiveText" Text="Playback" Foreground="{DynamicResource TextBrush}" Margin="15,0,0,0" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Button x:Name="NavPlaybackBtn" Style="{StaticResource DarkButton}" BorderThickness="0" Padding="15,12" HorizontalContentAlignment="Left" Margin="0,0,0,5" Click="PlaybackNavBtn_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Path Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.5" Fill="Transparent" Stretch="Uniform" Width="14" Height="14" Data="M8,1 A7,7 0 1,1 7.9,1 M6,4 L11,8 L6,12 Z"/>
+                                            <TextBlock x:Name="NavPlaybackText" Text="Playback" Margin="15,0,0,0" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
 
-                                <Border x:Name="NavRecordActive" Style="{StaticResource GlassOverlay}" Padding="15,12" Margin="0,0,0,5" Visibility="Collapsed" MouseLeftButtonDown="RecordBtn_Click" Cursor="Hand">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Ellipse x:Name="RecordBlinkDot" Width="12" Height="12" Fill="#FF4444" Margin="1,0,0,0"/>
-                                        <TextBlock x:Name="RecordTimeText" Text="00:00" Foreground="{DynamicResource TextBrush}" Margin="16,0,0,0" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Border>
-                                <Button x:Name="NavRecordBtn" Style="{StaticResource DarkButton}" BorderThickness="0" Padding="15,12" HorizontalContentAlignment="Left" Margin="0,0,0,5" Click="RecordBtn_Click">
-                                    <StackPanel Orientation="Horizontal">
-                                        <Ellipse Width="12" Height="12" Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.5" Margin="1,0,0,0"/>
-                                        <TextBlock Text="Record" Margin="16,0,0,0" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
+                                    <Border x:Name="NavRecordActive" Style="{StaticResource GlassOverlay}" Padding="15,12" Margin="0,0,0,5" Visibility="Collapsed" MouseLeftButtonDown="RecordBtn_Click" Cursor="Hand">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Ellipse x:Name="RecordBlinkDot" Width="12" Height="12" Fill="#FF4444" Margin="1,0,0,0"/>
+                                            <TextBlock x:Name="RecordTimeText" Text="00:00" Foreground="{DynamicResource TextBrush}" Margin="16,0,0,0" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Button x:Name="NavRecordBtn" Style="{StaticResource DarkButton}" BorderThickness="0" Padding="15,12" HorizontalContentAlignment="Left" Margin="0,0,0,5" Click="RecordBtn_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Width="12" Height="12" Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.5" Margin="1,0,0,0"/>
+                                            <TextBlock x:Name="NavRecordText" Text="Record" Margin="16,0,0,0" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
 
-                                <Border x:Name="NavSettingsActive" Style="{StaticResource GlassOverlay}" Padding="15,12" Margin="0,0,0,5" Visibility="Collapsed">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="⚙" Foreground="{DynamicResource AccentBrush}" FontSize="16" FontFamily="Segoe UI Symbol" Margin="0,-2,0,0"/>
-                                        <TextBlock Text="Settings" Foreground="{DynamicResource TextBrush}" Margin="15,0,0,0" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Border>
-                                <Button x:Name="NavSettingsBtn" Style="{StaticResource DarkButton}" BorderThickness="0" Padding="15,12" HorizontalContentAlignment="Left" Margin="0,0,0,5" Click="SettingsBtn_Click">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="⚙" Foreground="{DynamicResource MutedTextBrush}" FontSize="16" FontFamily="Segoe UI Symbol" Margin="0,-2,0,0"/>
-                                        <TextBlock Text="Settings" Margin="15,0,0,0" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
+                                    <Border x:Name="NavSettingsActive" Style="{StaticResource GlassOverlay}" Padding="15,12" Margin="0,0,0,5" Visibility="Collapsed">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="⚙" Foreground="{DynamicResource AccentBrush}" FontSize="16" FontFamily="Segoe UI Symbol" Margin="0,-2,0,0"/>
+                                            <TextBlock x:Name="NavSettingsActiveText" Text="Settings" Foreground="{DynamicResource TextBrush}" Margin="15,0,0,0" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Button x:Name="NavSettingsBtn" Style="{StaticResource DarkButton}" BorderThickness="0" Padding="15,12" HorizontalContentAlignment="Left" Margin="0,0,0,5" Click="SettingsBtn_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="⚙" Foreground="{DynamicResource MutedTextBrush}" FontSize="16" FontFamily="Segoe UI Symbol" Margin="0,-2,0,0"/>
+                                            <TextBlock x:Name="NavSettingsText" Text="Settings" Margin="15,0,0,0" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
 
-                                <Button Style="{StaticResource DarkButton}" BorderThickness="0" Padding="15,12" HorizontalContentAlignment="Left" Margin="0,0,0,5" Click="AboutBtn_Click">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="ⓘ" Foreground="{DynamicResource MutedTextBrush}" FontSize="16" FontFamily="Segoe UI Symbol" Margin="0,-2,0,0"/>
-                                        <TextBlock Text="About" Margin="15,0,0,0" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                            </StackPanel>
+                                    <Button Style="{StaticResource DarkButton}" BorderThickness="0" Padding="15,12" HorizontalContentAlignment="Left" Margin="0,0,0,5" Click="AboutBtn_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="ⓘ" Foreground="{DynamicResource MutedTextBrush}" FontSize="16" FontFamily="Segoe UI Symbol" Margin="0,-2,0,0"/>
+                                            <TextBlock x:Name="NavAboutText" Text="About" Margin="15,0,0,0" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
 
-                            <StackPanel Grid.Row="1" Margin="15,0,15,20">
-                                <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,0,0,15"/>
+                                <StackPanel x:Name="ProFeaturesPanel" Grid.Row="1" Margin="15,0,15,20">
+                                    <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,0,0,15"/>
 
-                                <TextBlock Text="Analog Fatness" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,0,0,8" ToolTip="Simulates analog saturation and warmth"/>
-                                <ToggleButton x:Name="FatModeToggle" Style="{StaticResource ProFeatureToggleStyle}" IsChecked="False" Click="FatModeToggle_Click" Margin="0,0,0,8"/>
-                                <TextBlock Text="Saturation / Warmth" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" HorizontalAlignment="Center"/>
+                                    <Grid>
+                                        <StackPanel x:Name="FatExpandedView">
+                                            <TextBlock Text="Analog Fatness" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,0,0,8" ToolTip="Simulates analog saturation and warmth"/>
+                                            <ToggleButton x:Name="FatModeToggle" Style="{StaticResource ProFeatureToggleStyle}" IsChecked="False" Click="FatModeToggle_Click" Margin="0,0,0,8" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="Saturation / Warmth" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                        <StackPanel x:Name="FatCollapsedView" Visibility="Collapsed">
+                                            <TextBlock Text="FAT" FontWeight="Bold" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,0,0,8" ToolTip="Simulates analog saturation and warmth"/>
+                                            <ToggleButton x:Name="FatModeCompactToggle" Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding IsChecked, ElementName=FatModeToggle, Mode=TwoWay}" Click="FatModeToggle_Click" HorizontalAlignment="Center" ToolTip="Analog Fatness"/>
+                                        </StackPanel>
+                                    </Grid>
 
-                                <Border Height="1" Background="{DynamicResource GlassOverlayBrush}" Margin="20,15,20,15"/>
+                                    <Border Height="1" Background="{DynamicResource GlassOverlayBrush}" Margin="20,15,20,15"/>
 
-                                <TextBlock Text="Super Bass" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,0,0,8" ToolTip="Deep punchy bass without distortion"/>
-                                <ToggleButton x:Name="SuperBassToggle" Style="{StaticResource ProFeatureToggleStyle}" IsChecked="False" Click="SuperBassToggle_Click" Margin="0,0,0,8"/>
-                                <TextBlock Text="Clean Low-End" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" HorizontalAlignment="Center"/>
+                                    <Grid>
+                                        <StackPanel x:Name="BassExpandedView">
+                                            <TextBlock Text="Super Bass" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,0,0,8" ToolTip="Deep punchy bass without distortion"/>
+                                            <ToggleButton x:Name="SuperBassToggle" Style="{StaticResource ProFeatureToggleStyle}" IsChecked="False" Click="SuperBassToggle_Click" Margin="0,0,0,8" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="Clean Low-End" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                        <StackPanel x:Name="BassCollapsedView" Visibility="Collapsed">
+                                            <TextBlock Text="BASS" FontWeight="Bold" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,0,0,8" ToolTip="Deep punchy bass without distortion"/>
+                                            <ToggleButton x:Name="SuperBassCompactToggle" Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding IsChecked, ElementName=SuperBassToggle, Mode=TwoWay}" Click="SuperBassToggle_Click" HorizontalAlignment="Center" ToolTip="Super Bass"/>
+                                        </StackPanel>
+                                    </Grid>
 
-                                <Border Height="1" Background="{DynamicResource GlassOverlayBrush}" Margin="20,15,20,15"/>
+                                    <Border Height="1" Background="{DynamicResource GlassOverlayBrush}" Margin="20,15,20,15"/>
 
-                                <TextBlock Text="3D Spatial" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,0,0,8" ToolTip="Virtual surround and stereo widening"/>
-                                <ToggleButton x:Name="SpatialSoundToggle" Style="{StaticResource ProFeatureToggleStyle}" IsChecked="False" Click="SpatialSoundToggle_Click" Margin="0,0,0,8"/>
-                                <TextBlock Text="Immersive Audio" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" HorizontalAlignment="Center"/>
-                            </StackPanel>
-                        </Grid>
-                    </Border>
+                                    <Grid>
+                                        <StackPanel x:Name="SpatialExpandedView">
+                                            <TextBlock Text="3D Spatial" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,0,0,8" ToolTip="Virtual surround and stereo widening"/>
+                                            <ToggleButton x:Name="SpatialSoundToggle" Style="{StaticResource ProFeatureToggleStyle}" IsChecked="False" Click="SpatialSoundToggle_Click" Margin="0,0,0,8" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="Immersive Audio" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                        <StackPanel x:Name="SpatialCollapsedView" Visibility="Collapsed">
+                                            <TextBlock Text="3D" FontWeight="Bold" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,0,0,8" ToolTip="Virtual surround and stereo widening"/>
+                                            <ToggleButton x:Name="SpatialSoundCompactToggle" Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding IsChecked, ElementName=SpatialSoundToggle, Mode=TwoWay}" Click="SpatialSoundToggle_Click" HorizontalAlignment="Center" ToolTip="3D Spatial"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <ToggleButton x:Name="SidebarToggleBtn" Style="{StaticResource CircleToggleStyle}" Width="26" Height="26" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,-13,0" Click="SidebarToggleBtn_Click">
+                            <Path Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="2" Data="M8,2 L2,8 L8,14" RenderTransformOrigin="0.5,0.5">
+                                <Path.RenderTransform>
+                                    <RotateTransform x:Name="SidebarArrowTransform" Angle="0"/>
+                                </Path.RenderTransform>
+                            </Path>
+                        </ToggleButton>
+                    </Grid>
 
                     <Grid x:Name="EqContentPanel" Grid.Column="1" Margin="0,0,10,10" Visibility="Visible">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="60"/>
                             <RowDefinition Height="2*"/>
-                            <RowDefinition Height="1.2*"/>
+                            <RowDefinition x:Name="EqVisualizersRow" Height="1.2*"/>
                         </Grid.RowDefinitions>
 
                         <Grid Grid.Row="0">
@@ -652,137 +707,147 @@
                             </StackPanel>
                         </Grid>
 
-                        <Border Grid.Row="1" Style="{StaticResource GlassPanel}" Margin="0,0,0,10" Padding="15,20">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="*"/>
-                                </Grid.RowDefinitions>
+                        <Grid Grid.Row="1" Margin="0,0,0,10">
+                            <Border Style="{StaticResource GlassPanel}" Padding="15,20">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
 
-                                <TextBlock Text="10-Band Equalizer" FontWeight="SemiBold" VerticalAlignment="Top" Foreground="{DynamicResource TextBrush}"/>
+                                    <TextBlock Text="10-Band Equalizer" FontWeight="SemiBold" VerticalAlignment="Top" Foreground="{DynamicResource TextBrush}"/>
 
-                                <Grid Grid.Row="1" Margin="0,20,0,0">
-                                    <Grid Margin="25,8,60,62">
-                                        <Line Y1="0" Y2="0" X1="0" X2="10000" Stretch="Fill" Stroke="{DynamicResource BorderBrush}" StrokeDashArray="3 3" VerticalAlignment="Top"/>
-                                        <Line Y1="0" Y2="0" X1="0" X2="10000" Stretch="Fill" Stroke="{DynamicResource BorderBrush}" VerticalAlignment="Center"/>
-                                        <Line Y1="0" Y2="0" X1="0" X2="10000" Stretch="Fill" Stroke="{DynamicResource BorderBrush}" StrokeDashArray="3 3" VerticalAlignment="Bottom"/>
-                                    </Grid>
+                                    <Grid Grid.Row="1" Margin="0,20,0,0">
+                                        <Grid Margin="25,8,60,62">
+                                            <Line Y1="0" Y2="0" X1="0" X2="10000" Stretch="Fill" Stroke="{DynamicResource BorderBrush}" StrokeDashArray="3 3" VerticalAlignment="Top"/>
+                                            <Line Y1="0" Y2="0" X1="0" X2="10000" Stretch="Fill" Stroke="{DynamicResource BorderBrush}" VerticalAlignment="Center"/>
+                                            <Line Y1="0" Y2="0" X1="0" X2="10000" Stretch="Fill" Stroke="{DynamicResource BorderBrush}" StrokeDashArray="3 3" VerticalAlignment="Bottom"/>
+                                        </Grid>
 
-                                    <Grid Margin="0,8,0,62" HorizontalAlignment="Right" Width="50">
-                                        <TextBlock Text="+12 dB" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" VerticalAlignment="Top" HorizontalAlignment="Right"/>
-                                        <TextBlock Text="0 dB" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                                        <TextBlock Text="-12 dB" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
-                                    </Grid>
+                                        <Grid Margin="0,8,0,62" HorizontalAlignment="Right" Width="50">
+                                            <TextBlock Text="+12 dB" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" VerticalAlignment="Top" HorizontalAlignment="Right"/>
+                                            <TextBlock Text="0 dB" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                            <TextBlock Text="-12 dB" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" VerticalAlignment="Bottom" HorizontalAlignment="Right"/>
+                                        </Grid>
 
-                                    <Grid Margin="0,0,55,0">
-                                        <UniformGrid x:Name="SlidersContainerGrid" Columns="10">
-                                            <Grid>
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="*"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
-                                                <Slider x:Name="Slider1" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
-                                                <TextBlock Grid.Row="1" Text="31 Hz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                                <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider1, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
-                                            </Grid>
-                                            <Grid>
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="*"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
-                                                <Slider x:Name="Slider2" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
-                                                <TextBlock Grid.Row="1" Text="62 Hz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                                <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider2, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
-                                            </Grid>
-                                            <Grid>
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="*"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
-                                                <Slider x:Name="Slider3" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
-                                                <TextBlock Grid.Row="1" Text="125 Hz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                                <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider3, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
-                                            </Grid>
-                                            <Grid>
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="*"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
-                                                <Slider x:Name="Slider4" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
-                                                <TextBlock Grid.Row="1" Text="250 Hz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                                <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider4, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
-                                            </Grid>
-                                            <Grid>
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="*"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
-                                                <Slider x:Name="Slider5" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
-                                                <TextBlock Grid.Row="1" Text="500 Hz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                                <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider5, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
-                                            </Grid>
-                                            <Grid>
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="*"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
-                                                <Slider x:Name="Slider6" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
-                                                <TextBlock Grid.Row="1" Text="1 kHz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                                <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider6, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
-                                            </Grid>
-                                            <Grid>
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="*"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
-                                                <Slider x:Name="Slider7" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
-                                                <TextBlock Grid.Row="1" Text="2 kHz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                                <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider7, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
-                                            </Grid>
-                                            <Grid>
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="*"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
-                                                <Slider x:Name="Slider8" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
-                                                <TextBlock Grid.Row="1" Text="4 kHz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                                <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider8, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
-                                            </Grid>
-                                            <Grid>
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="*"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
-                                                <Slider x:Name="Slider9" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
-                                                <TextBlock Grid.Row="1" Text="8 kHz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                                <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider9, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
-                                            </Grid>
-                                            <Grid>
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="*"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
-                                                <Slider x:Name="Slider10" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
-                                                <TextBlock Grid.Row="1" Text="16 kHz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                                <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider10, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
-                                            </Grid>
-                                        </UniformGrid>
+                                        <Grid Margin="0,0,55,0">
+                                            <UniformGrid x:Name="SlidersContainerGrid" Columns="10">
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="*"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                    </Grid.RowDefinitions>
+                                                    <Slider x:Name="Slider1" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
+                                                    <TextBlock Grid.Row="1" Text="31 Hz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                                    <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider1, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
+                                                </Grid>
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="*"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                    </Grid.RowDefinitions>
+                                                    <Slider x:Name="Slider2" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
+                                                    <TextBlock Grid.Row="1" Text="62 Hz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                                    <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider2, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
+                                                </Grid>
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="*"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                    </Grid.RowDefinitions>
+                                                    <Slider x:Name="Slider3" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
+                                                    <TextBlock Grid.Row="1" Text="125 Hz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                                    <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider3, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
+                                                </Grid>
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="*"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                    </Grid.RowDefinitions>
+                                                    <Slider x:Name="Slider4" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
+                                                    <TextBlock Grid.Row="1" Text="250 Hz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                                    <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider4, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
+                                                </Grid>
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="*"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                    </Grid.RowDefinitions>
+                                                    <Slider x:Name="Slider5" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
+                                                    <TextBlock Grid.Row="1" Text="500 Hz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                                    <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider5, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
+                                                </Grid>
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="*"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                    </Grid.RowDefinitions>
+                                                    <Slider x:Name="Slider6" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
+                                                    <TextBlock Grid.Row="1" Text="1 kHz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                                    <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider6, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
+                                                </Grid>
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="*"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                    </Grid.RowDefinitions>
+                                                    <Slider x:Name="Slider7" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
+                                                    <TextBlock Grid.Row="1" Text="2 kHz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                                    <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider7, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
+                                                </Grid>
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="*"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                    </Grid.RowDefinitions>
+                                                    <Slider x:Name="Slider8" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
+                                                    <TextBlock Grid.Row="1" Text="4 kHz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                                    <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider8, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
+                                                </Grid>
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="*"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                    </Grid.RowDefinitions>
+                                                    <Slider x:Name="Slider9" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
+                                                    <TextBlock Grid.Row="1" Text="8 kHz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                                    <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider9, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
+                                                </Grid>
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="*"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                    </Grid.RowDefinitions>
+                                                    <Slider x:Name="Slider10" ValueChanged="EqSlider_ValueChanged" Style="{StaticResource NeonSlider}" Minimum="-12" Maximum="12" Value="0.0" Margin="0,0,0,15"/>
+                                                    <TextBlock Grid.Row="1" Text="16 kHz" Foreground="{DynamicResource MutedTextBrush}" FontSize="11" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                                    <TextBox Grid.Row="2" Style="{StaticResource EqValueTextBox}" Text="{Binding Value, ElementName=Slider10, StringFormat={}{0:0.0}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" KeyDown="EqTextBox_KeyDown"/>
+                                                </Grid>
+                                            </UniformGrid>
+                                        </Grid>
                                     </Grid>
                                 </Grid>
-                            </Grid>
-                        </Border>
+                            </Border>
 
-                        <Grid Grid.Row="2">
+                            <ToggleButton x:Name="EqExpandBtn" Style="{StaticResource CircleToggleStyle}" Width="26" Height="26" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,-13" Click="EqExpandBtn_Click">
+                                <Path Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="2" Data="M2,2 L8,8 L14,2" RenderTransformOrigin="0.5,0.5">
+                                    <Path.RenderTransform>
+                                        <RotateTransform x:Name="EqExpandIconTransform" Angle="0"/>
+                                    </Path.RenderTransform>
+                                </Path>
+                            </ToggleButton>
+                        </Grid>
+
+                        <Grid x:Name="VisualizersContainer" Grid.Row="2" Visibility="Visible">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="90"/>
