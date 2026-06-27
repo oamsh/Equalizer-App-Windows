@@ -643,24 +643,10 @@
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                <Button x:Name="SavePresetBtn" Style="{StaticResource DarkButton}" BorderThickness="1" Padding="12,6" Margin="0,0,10,0" Click="SavePresetBtn_Click">
+                                <Button x:Name="SavePresetBtn" Style="{StaticResource DarkButton}" BorderThickness="1" Padding="12,6" Margin="0" Click="SavePresetBtn_Click">
                                     <StackPanel Orientation="Horizontal">
                                         <Path Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.5" Stretch="Uniform" Width="13" Height="13" Data="M2,2 L9,2 L13,6 L13,13 L2,13 Z M4,13 L4,9 L11,9 L11,13 M4,2 L4,5 L9,5 L9,2"/>
                                         <TextBlock Text="Save Preset" Margin="8,0,0,0" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-
-                                <Button Style="{StaticResource DarkButton}" BorderThickness="1" Padding="12,6" Margin="0,0,10,0">
-                                    <StackPanel Orientation="Horizontal">
-                                        <Path Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.5" Stretch="Uniform" Width="12" Height="12" Data="M6,10 L6,1 M2,5 L6,1 L10,5 M1,13 L11,13"/>
-                                        <TextBlock Text="Import" Margin="8,0,0,0" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-
-                                <Button Style="{StaticResource DarkButton}" BorderThickness="1" Padding="12,6">
-                                    <StackPanel Orientation="Horizontal">
-                                        <Path Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.5" Stretch="Uniform" Width="12" Height="12" Data="M6,1 L6,10 M2,6 L6,10 L10,6 M1,13 L11,13"/>
-                                        <TextBlock Text="Export" Margin="8,0,0,0" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
                             </StackPanel>
