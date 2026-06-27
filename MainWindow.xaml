@@ -631,7 +631,7 @@
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                 <TextBlock Text="Select Preset" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,15,0"/>
 
-                                <Grid>
+                                <Grid Margin="0,0,15,0">
                                     <ToggleButton x:Name="PresetDropdownToggle" Width="160" Height="32" Style="{StaticResource PresetToggleStyle}" Content="Custom"/>
 
                                     <Popup x:Name="PresetPopup" IsOpen="{Binding IsChecked, ElementName=PresetDropdownToggle}" PlacementTarget="{Binding ElementName=PresetDropdownToggle}" Placement="Bottom" AllowsTransparency="True" StaysOpen="False" PopupAnimation="Slide" Closed="PresetPopup_Closed">
@@ -686,9 +686,7 @@
                                         </Border>
                                     </Popup>
                                 </Grid>
-                            </StackPanel>
 
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                                 <Button x:Name="SavePresetBtn" Style="{StaticResource DarkButton}" BorderThickness="1" Padding="12,6" Margin="0" Click="SavePresetBtn_Click">
                                     <StackPanel Orientation="Horizontal">
                                         <Path Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.5" Stretch="Uniform" Width="13" Height="13" Data="M2,2 L9,2 L13,6 L13,13 L2,13 Z M4,13 L4,9 L11,9 L11,13 M4,2 L4,5 L9,5 L9,2"/>
@@ -1343,7 +1341,6 @@
                         </Grid>
                     </Border>
 
-                    <!-- NEW: Analog & Pro Features Content Panel -->
                     <Border x:Name="AnalogContentPanel" Grid.Column="1" Style="{StaticResource GlassPanel}" Margin="0,0,10,10" Padding="25" Visibility="Collapsed">
                         <Grid>
                             <Grid.RowDefinitions>
@@ -1571,64 +1568,46 @@
             </Grid>
         </Border>
 
-        <!-- Redesigned About Overlay -->
         <Grid x:Name="AboutOverlay" Visibility="Collapsed" Opacity="0" Panel.ZIndex="100">
-            <!-- Backdrop -->
             <Border Background="#CC07090E" MouseLeftButtonDown="CloseAbout_Click"/>
 
-            <!-- Main Card -->
             <Border HorizontalAlignment="Center" VerticalAlignment="Center" Width="460" RenderTransformOrigin="0.5,0.5">
                 <Border.RenderTransform>
                     <ScaleTransform x:Name="AboutScale" ScaleX="0.9" ScaleY="0.9"/>
                 </Border.RenderTransform>
 
                 <Grid>
-                    <!-- Glowing Drop Shadow for the card -->
                     <Border Background="{DynamicResource PanelBgBrush}" CornerRadius="20" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}">
                         <Border.Effect>
                             <DropShadowEffect Color="Black" BlurRadius="50" ShadowDepth="20" Opacity="0.6" Direction="270"/>
                         </Border.Effect>
                     </Border>
 
-                    <!-- Inner Content -->
                     <Border Background="{DynamicResource PanelBgBrush}" CornerRadius="20" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" ClipToBounds="True">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="140"/>
-                                <!-- Header/Banner Area -->
                                 <RowDefinition Height="*"/>
-                                <!-- Content Area -->
                             </Grid.RowDefinitions>
 
-                            <!-- Banner Background -->
                             <Border Grid.Row="0" Background="{DynamicResource SpectrumGradientBrush}" Opacity="0.15"/>
                             <Path Grid.Row="0" Fill="{DynamicResource AccentBrush}" Opacity="0.1" Stretch="Fill" Data="M0,140 L460,80 L460,0 L0,0 Z"/>
 
-                            <!-- Close Button (Fixed) -->
                             <Button Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="32" Height="32" Margin="0,15,15,0" Style="{StaticResource CircleButtonStyle}" Background="{DynamicResource GlassOverlayBrush}" BorderThickness="0" Click="CloseAbout_Click">
                                 <Path Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Stretch="Uniform" Width="10" Height="10" Data="M0,0 L10,10 M10,0 L0,10"/>
                             </Button>
 
-                            <!-- Content Container -->
                             <Grid Grid.Row="1" Margin="30, -50, 30, 30">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
-                                    <!-- Avatar -->
                                     <RowDefinition Height="Auto"/>
-                                    <!-- Name -->
                                     <RowDefinition Height="Auto"/>
-                                    <!-- Role Badge -->
                                     <RowDefinition Height="Auto"/>
-                                    <!-- Bio -->
                                     <RowDefinition Height="Auto"/>
-                                    <!-- Separator -->
                                     <RowDefinition Height="Auto"/>
-                                    <!-- Socials -->
                                 </Grid.RowDefinitions>
 
-                                <!-- Profile Avatar -->
                                 <Grid Grid.Row="0" Width="110" Height="110" HorizontalAlignment="Center" Margin="0,0,0,15">
-                                    <!-- Animated Rings -->
                                     <Ellipse Stroke="{DynamicResource AccentBrushLight}" StrokeThickness="2" StrokeDashArray="2 4" Opacity="0.5" RenderTransformOrigin="0.5,0.5">
                                         <Ellipse.RenderTransform>
                                             <RotateTransform x:Name="AboutRing1" Angle="0"/>
@@ -1640,7 +1619,6 @@
                                         </Ellipse.RenderTransform>
                                     </Ellipse>
 
-                                    <!-- Actual Image -->
                                     <Border Margin="10" CornerRadius="45" Background="{DynamicResource WindowBgBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="2">
                                         <Border.Effect>
                                             <DropShadowEffect Color="{DynamicResource AccentColor}" BlurRadius="15" ShadowDepth="0" Opacity="0.5"/>
@@ -1653,22 +1631,18 @@
                                     </Border>
                                 </Grid>
 
-                                <!-- Name -->
                                 <TextBlock Grid.Row="1" Text="Om" Foreground="{DynamicResource TextBrush}" FontWeight="Bold" FontSize="26" HorizontalAlignment="Center" Margin="0,0,0,8"/>
 
-                                <!-- Role Badge -->
                                 <Border Grid.Row="2" Background="{DynamicResource GlassOverlayBrush}" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1" CornerRadius="12" HorizontalAlignment="Center" Padding="12,4" Margin="0,0,0,20">
                                     <TextBlock Text="Software Developer" Foreground="{DynamicResource AccentBrushLight}" FontWeight="SemiBold" FontSize="12"/>
                                 </Border>
 
-                                <!-- Bio -->
                                 <TextBlock Grid.Row="3" TextWrapping="Wrap" TextAlignment="Center" Foreground="{DynamicResource MutedTextBrush}" FontSize="13" LineHeight="22" Margin="0,0,0,25">
                                     Passionate software developer specializing in C# and Unity game development. Dedicated to crafting immersive 3D experiences and efficient mechanics. Always exploring new technologies, from game engines to Android system modding, to build better solutions.
                                 </TextBlock>
 
                                 <Border Grid.Row="4" Height="1" Background="{DynamicResource BorderBrush}" Margin="20,0,20,20"/>
 
-                                <!-- Social Buttons -->
                                 <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Center">
                                     <Button Style="{StaticResource DarkButton}" Background="{DynamicResource GlassOverlayBrush}" BorderThickness="1" Padding="15,8" Margin="0,0,10,0">
                                         <StackPanel Orientation="Horizontal">
@@ -1739,7 +1713,6 @@
 
         <Image x:Name="ThemeTransitionOverlay" Visibility="Collapsed" IsHitTestVisible="False" Stretch="Fill"/>
 
-        <!-- Invisible Resize Grip -->
         <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="20" Height="20" Background="Transparent" Cursor="SizeNWSE" MouseLeftButtonDown="ResizeGrip_MouseLeftButtonDown" Panel.ZIndex="999"/>
     </Grid>
 </Window>
