@@ -76,8 +76,7 @@ namespace EqualizerPro
         private bool _isSpatialSoundEnabled = false;
 
         private DispatcherTimer _visualizerTimer;
-        private double[] _freqTargets = new double[10];
-        private double[] _freqCurrents = new double[10];
+
         private double[] _spectrumTargets = new double[48];
         private double[] _spectrumCurrents = new double[48];
         private double _spectrumFalloffDropRate = 2.0;
@@ -149,7 +148,6 @@ namespace EqualizerPro
             _marqueeTimer.Tick += MarqueeTimer_Tick;
             _marqueeTimer.Start();
 
-            for (int i = 0; i < 10; i++) _freqCurrents[i] = 50;
             for (int i = 0; i < 48; i++) _spectrumCurrents[i] = 2;
 
             Loaded += MainWindow_Loaded;
@@ -524,7 +522,7 @@ namespace EqualizerPro
                 double targetOpacity = _isEcoModeEnabled ? 0.3 : 1.0;
                 var fadeAnim = new DoubleAnimation(targetOpacity, TimeSpan.FromMilliseconds(300));
 
-                if (EqFreqResponsePanel != null) EqFreqResponsePanel.BeginAnimation(UIElement.OpacityProperty, fadeAnim);
+                if (GoniometerPanel != null) GoniometerPanel.BeginAnimation(UIElement.OpacityProperty, fadeAnim);
                 if (EqSpectrumPanel != null) EqSpectrumPanel.BeginAnimation(UIElement.OpacityProperty, fadeAnim);
             }
         }
@@ -1142,7 +1140,7 @@ namespace EqualizerPro
                             EcoModeToggle.IsChecked = isEco;
 
                             double targetOpacity = _isEcoModeEnabled ? 0.3 : 1.0;
-                            if (EqFreqResponsePanel != null) EqFreqResponsePanel.Opacity = targetOpacity;
+                            if (GoniometerPanel != null) GoniometerPanel.Opacity = targetOpacity;
                             if (EqSpectrumPanel != null) EqSpectrumPanel.Opacity = targetOpacity;
                         }
                     }
@@ -1352,7 +1350,7 @@ namespace EqualizerPro
                 return;
             }
 
-            CloseSavePreset_Click(null, null);
+            CloseSavePreset_Click(sender, null!);
 
             double[] currentValues = new double[10];
             for (int i = 0; i < 10; i++)
@@ -1642,7 +1640,7 @@ namespace EqualizerPro
         private void ThemeSelector_ThemeChanged(object? sender, SelectionChangedEventArgs e)
         {
             if (_isLoadingSettings || ThemeSelector == null || !IsLoaded) return;
-            var selectedItem = (ComboBoxItem)ThemeSelector.SelectedItem;
+            var selectedItem = ThemeSelector.SelectedItem as ComboBoxItem;
             if (selectedItem == null) return;
 
             string themeName = selectedItem.Content?.ToString() ?? "";
@@ -1805,22 +1803,7 @@ namespace EqualizerPro
 
             bool isActuallyPlayingAudio = !_isEcoModeEnabled && isPlayingState && currentPeak > 0.001f;
 
-            for (int i = 0; i < 10; i++)
-            {
-                double sliderVal = _eqSliders != null ? _eqSliders[i].Value : 0;
-                double baseVisualY = 50 - (sliderVal * 2.5);
-
-                if (isActuallyPlayingAudio)
-                {
-                    if (_rand.NextDouble() < 0.2) _freqTargets[i] = baseVisualY + (_rand.Next(-15, 15) * currentPeak * 2.5);
-                }
-                else
-                {
-                    _freqTargets[i] = baseVisualY;
-                }
-                _freqCurrents[i] += (_freqTargets[i] - _freqCurrents[i]) * 0.10;
-            }
-            DrawFrequencyGraph();
+            DrawGoniometer(isActuallyPlayingAudio);
 
             if (EqSpectrumGrid != null)
             {
@@ -1928,25 +1911,57 @@ namespace EqualizerPro
             }
         }
 
+        private void DrawGoniometer(bool isPlaying)
+        {
+            if (GoniometerPath == null || GoniometerPathGlow == null) return;
+
+            if (!isPlaying || (_leftDbCurrent < 0.001 && _rightDbCurrent < 0.001))
+            {
+                GoniometerPath.Data = null;
+                GoniometerPathGlow.Data = null;
+                return;
+            }
+
+            int pointsCount = 100;
+            Point[] pts = new Point[pointsCount];
+
+            double cx = 50;
+            double cy = 50;
+
+            double stereoWidth = _isSpatialSoundEnabled ? 2.5 : 1.2;
+
+            double time = DateTime.Now.TimeOfDay.TotalMilliseconds / 150.0;
+
+            double scaleL = _leftDbCurrent * 45.0;
+            double scaleR = _rightDbCurrent * 45.0;
+
+            for (int i = 0; i < pointsCount; i++)
+            {
+                double t = (i / (double)(pointsCount - 1)) * Math.PI * 2;
+
+                double mid = Math.Sin(t * 2 + time) * 0.6 + Math.Sin(t * 3 - time * 0.5) * 0.4;
+                double side = Math.Sin(t * 3 - time * 0.8) * 0.5 + Math.Cos(t * 4 + time) * 0.5;
+
+                double noise = (_rand.NextDouble() - 0.5) * 0.05;
+
+                double l = (mid - (side * stereoWidth) + noise) * scaleL;
+                double r = (mid + (side * stereoWidth) + noise) * scaleR;
+
+                double x = (r - l) * 0.7071;
+                double y = (r + l) * 0.7071;
+
+                pts[i] = new Point(cx + x, cy - y);
+            }
+
+            var geom = CreateSmoothCurve(pts, false);
+            GoniometerPath.Data = geom;
+            GoniometerPathGlow.Data = geom;
+        }
+
         private void KeepTextCentered(double l, double r)
         {
             if (EqLeftDbText != null) EqLeftDbText.Text = l <= -59.0 ? "-inf" : l.ToString("0.0");
             if (EqRightDbText != null) EqRightDbText.Text = r <= -59.0 ? "-inf" : r.ToString("0.0");
-        }
-
-        private void DrawFrequencyGraph()
-        {
-            if (EqFreqResponseLine == null || EqFreqResponseFill == null) return;
-
-            Point[] points = new Point[10];
-            for (int i = 0; i < 10; i++) points[i] = new Point(i * 11.11, _freqCurrents[i]);
-
-            var fillGeometry = CreateSmoothCurve(points, true, new Point(100, 100), new Point(0, 100));
-            var lineGeometry = CreateSmoothCurve(points, false);
-
-            EqFreqResponseFill.Data = fillGeometry;
-            EqFreqResponseLine.Data = lineGeometry;
-            if (EqFreqResponseLineGlow != null) EqFreqResponseLineGlow.Data = lineGeometry;
         }
 
         private Geometry CreateSmoothCurve(Point[] points, bool isClosed, Point bottomRight = default, Point bottomLeft = default)
@@ -1956,7 +1971,7 @@ namespace EqualizerPro
             {
                 if (points.Length > 0)
                 {
-                    ctx.BeginFigure(points[0], true, isClosed);
+                    ctx.BeginFigure(points[0], false, isClosed);
                     if (points.Length > 1)
                     {
                         double tension = 0.3;
