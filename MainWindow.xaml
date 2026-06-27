@@ -2,6 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Equalizer Pro" Height="768" Width="1100"
+        MinWidth="850" MinHeight="600"
         WindowStyle="None" AllowsTransparency="True"
         Background="Transparent" Foreground="{DynamicResource TextBrush}"
         WindowStartupLocation="CenterScreen"
@@ -49,6 +50,27 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="ToggleButton">
                         <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="15">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CircleButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource PanelBgBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="16">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -297,12 +319,12 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6">
+                        <Border x:Name="ButtonBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6">
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" Margin="{TemplateBinding Padding}"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource HoverBrush}"/>
                                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -1541,66 +1563,98 @@
             </Grid>
         </Border>
 
-        <Grid x:Name="AboutOverlay" Visibility="Collapsed" Opacity="0">
-            <Border Background="#B2000000" MouseLeftButtonDown="CloseAbout_Click"/>
+        <Grid x:Name="AboutOverlay" Visibility="Collapsed" Opacity="0" Panel.ZIndex="100">
+            <Border Background="#CC07090E" MouseLeftButtonDown="CloseAbout_Click"/>
 
-            <Border Style="{StaticResource GlassPanel}" HorizontalAlignment="Center" VerticalAlignment="Center" Width="420" Padding="35" RenderTransformOrigin="0.5,0.5">
+            <Border HorizontalAlignment="Center" VerticalAlignment="Center" Width="460" RenderTransformOrigin="0.5,0.5">
                 <Border.RenderTransform>
-                    <ScaleTransform x:Name="AboutScale" ScaleX="0.95" ScaleY="0.95"/>
+                    <ScaleTransform x:Name="AboutScale" ScaleX="0.9" ScaleY="0.9"/>
                 </Border.RenderTransform>
+
                 <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
-                    <Button HorizontalAlignment="Right" VerticalAlignment="Top" Width="24" Height="24" BorderThickness="0" Background="Transparent" Click="CloseAbout_Click" Margin="0,-15,-15,0" Cursor="Hand">
-                        <Path Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="2" Stretch="Uniform" Width="10" Height="10" Data="M0,0 L10,10 M10,0 L0,10"/>
-                    </Button>
-
-                    <Border Grid.Row="0" Width="100" Height="100" CornerRadius="50" HorizontalAlignment="Center" Margin="0,0,0,20">
-                        <Border.Background>
-                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                <GradientStop Color="{DynamicResource AccentColorLight}" Offset="0.0"/>
-                                <GradientStop Color="{DynamicResource AccentColor}" Offset="1.0"/>
-                            </LinearGradientBrush>
-                        </Border.Background>
+                    <Border Background="{DynamicResource PanelBgBrush}" CornerRadius="20" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}">
                         <Border.Effect>
-                            <DropShadowEffect Color="{DynamicResource AccentColor}" BlurRadius="20" ShadowDepth="0" Opacity="0.6"/>
+                            <DropShadowEffect Color="Black" BlurRadius="50" ShadowDepth="20" Opacity="0.6" Direction="270"/>
                         </Border.Effect>
-                        <Grid>
-                            <Ellipse Margin="3">
-                                <Ellipse.Fill>
-                                    <ImageBrush x:Name="ProfileImageBrush" Stretch="UniformToFill"/>
-                                </Ellipse.Fill>
-                            </Ellipse>
-                        </Grid>
                     </Border>
 
-                    <TextBlock Grid.Row="1" Text="Om" Foreground="{DynamicResource TextBrush}" FontWeight="Bold" FontSize="24" HorizontalAlignment="Center" Margin="0,0,0,5"/>
-                    <TextBlock Grid.Row="2" Text="Software Developer" Foreground="{DynamicResource AccentBrushLight}" FontWeight="SemiBold" FontSize="14" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+                    <Border Background="{DynamicResource PanelBgBrush}" CornerRadius="20" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" ClipToBounds="True">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="140"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="3" TextWrapping="Wrap" TextAlignment="Center" Foreground="{DynamicResource MutedTextBrush}" FontSize="13" LineHeight="20" Margin="0,0,0,30">
-                        Passionate software developer specializing in modern desktop and web applications. Dedicated to writing clean, efficient code and creating intuitive user experiences. Always exploring new technologies to build better solutions.
-                    </TextBlock>
+                            <Border Grid.Row="0" Background="{DynamicResource SpectrumGradientBrush}" Opacity="0.15"/>
+                            <Path Grid.Row="0" Fill="{DynamicResource AccentBrush}" Opacity="0.1" Stretch="Fill" Data="M0,140 L460,80 L460,0 L0,0 Z"/>
 
-                    <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Center">
-                        <Button Style="{StaticResource DarkButton}" BorderThickness="1" Padding="15,8" Margin="0,0,10,0">
-                            <StackPanel Orientation="Horizontal">
-                                <Path Fill="{DynamicResource MutedTextBrush}" Stretch="Uniform" Width="12" Height="12" Data="M12,0 C5.37,0 0,5.37 0,12 C0,17.31 3.44,21.81 8.2,23.38 C8.8,23.49 9.02,23.12 9.02,22.81 C9.02,22.53 9.01,21.73 9.01,20.67 C5.67,21.4 4.97,19.06 4.97,19.06 C4.42,17.67 3.63,17.29 3.63,17.29 C2.54,16.54 3.71,16.56 3.71,16.56 C4.92,16.64 5.56,17.8 5.56,17.8 C6.63,19.64 8.36,19.11 8.97,18.8 C9.08,18.11 9.34,17.58 9.63,17.28 C6.97,16.98 4.16,15.95 4.16,11.37 C4.16,10.06 4.63,8.99 5.39,8.14 C5.27,7.84 4.86,6.62 5.51,5.03 C5.51,5.03 6.51,4.71 8.99,6.39 C9.94,6.13 10.97,6.01 11.99,6.01 C13.01,6.01 14.04,6.13 14.99,6.39 C17.47,4.71 18.47,5.03 18.47,5.03 C19.12,6.62 18.71,7.84 18.59,8.14 C19.35,8.99 19.82,10.06 19.82,11.37 C19.82,15.96 17.01,16.98 14.34,17.28 C14.71,17.59 15.03,18.2 15.03,19.01 C15.03,20.17 15.02,21.11 15.02,21.41 C15.02,21.72 15.24,22.1 15.85,21.99 C20.55,20.42 24,15.95 24,10.51 C24,4.71 18.63,0 12,0 Z"/>
-                                <TextBlock Text="GitHub" Margin="8,0,0,0"/>
-                            </StackPanel>
-                        </Button>
-                        <Button Style="{StaticResource DarkButton}" BorderThickness="1" Padding="15,8">
-                            <StackPanel Orientation="Horizontal">
-                                <Path Fill="{DynamicResource MutedTextBrush}" Stretch="Uniform" Width="12" Height="12" Data="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2C22,19.4 19.4,22 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8C2,4.6 4.6,2 7.8,2ZM7.6,4C5.6,4 4,5.6 4,7.6V16.4C4,18.4 5.6,20 7.6,20H16.4C18.4,20 20,18.4 20,16.4V7.6C20,5.6 18.4,4 16.4,4H7.6ZM12,6.875C14.83,6.875 17.125,9.17 17.125,12C17.125,14.83 14.83,17.125 12,17.125C9.17,17.125 6.875,14.83 6.875,12C6.875,9.17 9.17,6.875 12,6.875ZM12,8.875C10.27,8.875 8.875,10.27 8.875,12C8.875,13.73 10.27,15.125 12,15.125C13.73,15.125 15.125,13.73 15.125,12C15.125,10.27 13.73,8.875 12,8.875ZM16.5,6.25C17.19,6.25 17.75,6.81 17.75,7.5C17.75,8.19 17.19,8.75 16.5,8.75C15.81,8.75 15.25,8.19 15.25,7.5C15.25,6.81 15.81,6.25 16.5,6.25Z"/>
-                                <TextBlock Text="Instagram" Margin="8,0,0,0"/>
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
+                            <Button Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Top" Width="32" Height="32" Margin="0,15,15,0" Style="{StaticResource CircleButtonStyle}" Background="{DynamicResource GlassOverlayBrush}" BorderThickness="0" Click="CloseAbout_Click">
+                                <Path Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Stretch="Uniform" Width="10" Height="10" Data="M0,0 L10,10 M10,0 L0,10"/>
+                            </Button>
+
+                            <Grid Grid.Row="1" Margin="30, -50, 30, 30">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <Grid Grid.Row="0" Width="110" Height="110" HorizontalAlignment="Center" Margin="0,0,0,15">
+                                    <Ellipse Stroke="{DynamicResource AccentBrushLight}" StrokeThickness="2" StrokeDashArray="2 4" Opacity="0.5" RenderTransformOrigin="0.5,0.5">
+                                        <Ellipse.RenderTransform>
+                                            <RotateTransform x:Name="AboutRing1" Angle="0"/>
+                                        </Ellipse.RenderTransform>
+                                    </Ellipse>
+                                    <Ellipse Stroke="{DynamicResource AccentBrush}" StrokeThickness="2" StrokeDashArray="4 2" Margin="5" Opacity="0.7" RenderTransformOrigin="0.5,0.5">
+                                        <Ellipse.RenderTransform>
+                                            <RotateTransform x:Name="AboutRing2" Angle="0"/>
+                                        </Ellipse.RenderTransform>
+                                    </Ellipse>
+
+                                    <Border Margin="10" CornerRadius="45" Background="{DynamicResource WindowBgBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="2">
+                                        <Border.Effect>
+                                            <DropShadowEffect Color="{DynamicResource AccentColor}" BlurRadius="15" ShadowDepth="0" Opacity="0.5"/>
+                                        </Border.Effect>
+                                        <Ellipse>
+                                            <Ellipse.Fill>
+                                                <ImageBrush x:Name="ProfileImageBrush" Stretch="UniformToFill"/>
+                                            </Ellipse.Fill>
+                                        </Ellipse>
+                                    </Border>
+                                </Grid>
+
+                                <TextBlock Grid.Row="1" Text="Om" Foreground="{DynamicResource TextBrush}" FontWeight="Bold" FontSize="26" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+
+                                <Border Grid.Row="2" Background="{DynamicResource GlassOverlayBrush}" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1" CornerRadius="12" HorizontalAlignment="Center" Padding="12,4" Margin="0,0,0,20">
+                                    <TextBlock Text="Software Developer" Foreground="{DynamicResource AccentBrushLight}" FontWeight="SemiBold" FontSize="12"/>
+                                </Border>
+
+                                <TextBlock Grid.Row="3" TextWrapping="Wrap" TextAlignment="Center" Foreground="{DynamicResource MutedTextBrush}" FontSize="13" LineHeight="22" Margin="0,0,0,25">
+                                    Passionate software developer specializing in C# and Unity game development. Dedicated to crafting immersive 3D experiences and efficient mechanics. Always exploring new technologies, from game engines to Android system modding, to build better solutions.
+                                </TextBlock>
+
+                                <Border Grid.Row="4" Height="1" Background="{DynamicResource BorderBrush}" Margin="20,0,20,20"/>
+
+                                <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <Button Style="{StaticResource DarkButton}" Background="{DynamicResource GlassOverlayBrush}" BorderThickness="1" Padding="15,8" Margin="0,0,10,0">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Path Fill="{DynamicResource MutedTextBrush}" Stretch="Uniform" Width="14" Height="14" Data="M12,0 C5.37,0 0,5.37 0,12 C0,17.31 3.44,21.81 8.2,23.38 C8.8,23.49 9.02,23.12 9.02,22.81 C9.02,22.53 9.01,21.73 9.01,20.67 C5.67,21.4 4.97,19.06 4.97,19.06 C4.42,17.67 3.63,17.29 3.63,17.29 C2.54,16.54 3.71,16.56 3.71,16.56 C4.92,16.64 5.56,17.8 5.56,17.8 C6.63,19.64 8.36,19.11 8.97,18.8 C9.08,18.11 9.34,17.58 9.63,17.28 C6.97,16.98 4.16,15.95 4.16,11.37 C4.16,10.06 4.63,8.99 5.39,8.14 C5.27,7.84 4.86,6.62 5.51,5.03 C5.51,5.03 6.51,4.71 8.99,6.39 C9.94,6.13 10.97,6.01 11.99,6.01 C13.01,6.01 14.04,6.13 14.99,6.39 C17.47,4.71 18.47,5.03 18.47,5.03 C19.12,6.62 18.71,7.84 18.59,8.14 C19.35,8.99 19.82,10.06 19.82,11.37 C19.82,15.96 17.01,16.98 14.34,17.28 C14.71,17.59 15.03,18.2 15.03,19.01 C15.03,20.17 15.02,21.11 15.02,21.41 C15.02,21.72 15.24,22.1 15.85,21.99 C20.55,20.42 24,15.95 24,10.51 C24,4.71 18.63,0 12,0 Z"/>
+                                            <TextBlock Text="GitHub" FontWeight="SemiBold" Margin="10,0,0,0"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Style="{StaticResource DarkButton}" Background="{DynamicResource GlassOverlayBrush}" BorderThickness="1" Padding="15,8">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Path Fill="{DynamicResource MutedTextBrush}" Stretch="Uniform" Width="14" Height="14" Data="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2C22,19.4 19.4,22 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8C2,4.6 4.6,2 7.8,2ZM7.6,4C5.6,4 4,5.6 4,7.6V16.4C4,18.4 5.6,20 7.6,20H16.4C18.4,20 20,18.4 20,16.4V7.6C20,5.6 18.4,4 16.4,4H7.6ZM12,6.875C14.83,6.875 17.125,9.17 17.125,12C17.125,14.83 14.83,17.125 12,17.125C9.17,17.125 6.875,14.83 6.875,12C6.875,9.17 9.17,6.875 12,6.875ZM12,8.875C10.27,8.875 8.875,10.27 8.875,12C8.875,13.73 10.27,15.125 12,15.125C13.73,15.125 15.125,13.73 15.125,12C15.125,10.27 13.73,8.875 12,8.875ZM16.5,6.25C17.19,6.25 17.75,6.81 17.75,7.5C17.75,8.19 17.19,8.75 16.5,8.75C15.81,8.75 15.25,8.19 15.25,7.5C15.25,6.81 15.81,6.25 16.5,6.25Z"/>
+                                            <TextBlock Text="Instagram" FontWeight="SemiBold" Margin="10,0,0,0"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </Grid>
+                    </Border>
                 </Grid>
             </Border>
         </Grid>
@@ -1653,5 +1707,7 @@
         </Popup>
 
         <Image x:Name="ThemeTransitionOverlay" Visibility="Collapsed" IsHitTestVisible="False" Stretch="Fill"/>
+
+        <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Width="20" Height="20" Background="Transparent" Cursor="SizeNWSE" MouseLeftButtonDown="ResizeGrip_MouseLeftButtonDown" Panel.ZIndex="999"/>
     </Grid>
 </Window>

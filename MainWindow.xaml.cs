@@ -42,6 +42,9 @@ namespace EqualizerPro
 
     public partial class MainWindow : Window
     {
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        private static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
         private GlobalSystemMediaTransportControlsSessionManager? _sessionManager;
         private GlobalSystemMediaTransportControlsSession? _currentSession;
         private DispatcherTimer _playbackTimer;
@@ -226,7 +229,6 @@ namespace EqualizerPro
             if (RecordTimeText != null) RecordTimeText.Visibility = textVis;
             if (NavRecordText != null) NavRecordText.Visibility = textVis;
 
-            // Analog text hide/show
             if (NavAnalogActiveText != null) NavAnalogActiveText.Visibility = textVis;
             if (NavAnalogText != null) NavAnalogText.Visibility = textVis;
 
@@ -2324,6 +2326,16 @@ namespace EqualizerPro
             if (e.ButtonState == MouseButtonState.Pressed) DragMove();
         }
 
+        private void ResizeGrip_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            e.Handled = true;
+            if (e.LeftButton == MouseButtonState.Pressed)
+            {
+                var helper = new WindowInteropHelper(this);
+                SendMessage(helper.Handle, 0x112, (IntPtr)0xF008, IntPtr.Zero);
+            }
+        }
+
         private void Minimize_Click(object? sender, RoutedEventArgs e)
         {
             if (MinimizeToTrayToggle != null && MinimizeToTrayToggle.IsChecked == true)
@@ -2351,7 +2363,7 @@ namespace EqualizerPro
             var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(200));
             AboutOverlay.BeginAnimation(UIElement.OpacityProperty, fadeIn);
 
-            var popIn = new DoubleAnimation(0.95, 1.0, TimeSpan.FromMilliseconds(300))
+            var popIn = new DoubleAnimation(0.9, 1.0, TimeSpan.FromMilliseconds(400))
             {
                 EasingFunction = new QuarticEase { EasingMode = EasingMode.EaseOut }
             };
@@ -2362,7 +2374,7 @@ namespace EqualizerPro
         private void CloseAbout_Click(object? sender, RoutedEventArgs e)
         {
             if (AboutOverlay == null) return;
-            var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(150));
+            var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(200));
             fadeOut.Completed += (s, ev) => AboutOverlay.Visibility = Visibility.Collapsed;
             AboutOverlay.BeginAnimation(UIElement.OpacityProperty, fadeOut);
         }
@@ -2373,6 +2385,12 @@ namespace EqualizerPro
             ScrollText(TrackArtistScroller);
             ScrollText(PlaybackBigTitleScroller);
             ScrollText(PlaybackBigArtistScroller);
+
+            if (AboutOverlay != null && AboutOverlay.Visibility == Visibility.Visible)
+            {
+                if (AboutRing1 != null) AboutRing1.Angle = (AboutRing1.Angle + 1) % 360;
+                if (AboutRing2 != null) AboutRing2.Angle = (AboutRing2.Angle - 1.5) % 360;
+            }
         }
 
         private void ScrollText(ScrollViewer? scroller)
