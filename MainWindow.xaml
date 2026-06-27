@@ -1172,7 +1172,7 @@
                                                 <Slider x:Name="SpectrumFalloffSlider" Grid.Column="1" Width="150" Value="40" Maximum="100" Style="{StaticResource VolumeSlider}" VerticalAlignment="Center" ValueChanged="SpectrumFalloffSlider_ValueChanged"/>
                                             </Grid>
 
-                                            <Grid>
+                                            <Grid Margin="0,0,0,15">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
@@ -1183,6 +1183,19 @@
                                                 </StackPanel>
 
                                                 <ToggleButton x:Name="EcoModeToggle" Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="False" VerticalAlignment="Center" Click="EcoModeToggle_Click"/>
+                                            </Grid>
+
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <TextBlock Text="Enable Advanced OS Blur" Foreground="{DynamicResource TextBrush}" FontSize="14" FontWeight="SemiBold"/>
+                                                    <TextBlock Text="Uses Windows Acrylic Blur. Disable to improve performance or fix visual glitches." Foreground="{DynamicResource MutedTextBrush}" FontSize="11" Margin="0,2,0,0"/>
+                                                </StackPanel>
+
+                                                <ToggleButton x:Name="OSBlurToggle" Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" IsChecked="True" VerticalAlignment="Center" Click="OSBlurToggle_Click"/>
                                             </Grid>
                                         </StackPanel>
                                     </Border>

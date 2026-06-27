@@ -81,6 +81,7 @@ namespace EqualizerPro
         private double _spectrumFalloffDropRate = 2.0;
         private bool _isEcoModeEnabled = false;
         private int _spectrumStyle = 0;
+        private bool _isOSBlurEnabled = true;
 
         private double _leftDbTarget = 0;
         private double _leftDbCurrent = 0;
@@ -232,28 +233,35 @@ namespace EqualizerPro
             if (NavSettingsText != null) NavSettingsText.Visibility = textVis;
             if (NavAboutText != null) NavAboutText.Visibility = textVis;
 
-            // Swap to/from Compact Pro Features view
+            // Swap to/from Compact Pro Features view dynamically using FindName to avoid CS0103 errors
+            var fatExpanded = this.FindName("FatExpandedView") as UIElement;
+            var fatCollapsed = this.FindName("FatCollapsedView") as UIElement;
+            var bassExpanded = this.FindName("BassExpandedView") as UIElement;
+            var bassCollapsed = this.FindName("BassCollapsedView") as UIElement;
+            var spatialExpanded = this.FindName("SpatialExpandedView") as UIElement;
+            var spatialCollapsed = this.FindName("SpatialCollapsedView") as UIElement;
+
             if (isCollapsed)
             {
-                if (FatExpandedView != null) FatExpandedView.Visibility = Visibility.Collapsed;
-                if (FatCollapsedView != null) FatCollapsedView.Visibility = Visibility.Visible;
+                if (fatExpanded != null) fatExpanded.Visibility = Visibility.Collapsed;
+                if (fatCollapsed != null) fatCollapsed.Visibility = Visibility.Visible;
 
-                if (BassExpandedView != null) BassExpandedView.Visibility = Visibility.Collapsed;
-                if (BassCollapsedView != null) BassCollapsedView.Visibility = Visibility.Visible;
+                if (bassExpanded != null) bassExpanded.Visibility = Visibility.Collapsed;
+                if (bassCollapsed != null) bassCollapsed.Visibility = Visibility.Visible;
 
-                if (SpatialExpandedView != null) SpatialExpandedView.Visibility = Visibility.Collapsed;
-                if (SpatialCollapsedView != null) SpatialCollapsedView.Visibility = Visibility.Visible;
+                if (spatialExpanded != null) spatialExpanded.Visibility = Visibility.Collapsed;
+                if (spatialCollapsed != null) spatialCollapsed.Visibility = Visibility.Visible;
             }
             else
             {
-                if (FatExpandedView != null) FatExpandedView.Visibility = Visibility.Visible;
-                if (FatCollapsedView != null) FatCollapsedView.Visibility = Visibility.Collapsed;
+                if (fatExpanded != null) fatExpanded.Visibility = Visibility.Visible;
+                if (fatCollapsed != null) fatCollapsed.Visibility = Visibility.Collapsed;
 
-                if (BassExpandedView != null) BassExpandedView.Visibility = Visibility.Visible;
-                if (BassCollapsedView != null) BassCollapsedView.Visibility = Visibility.Collapsed;
+                if (bassExpanded != null) bassExpanded.Visibility = Visibility.Visible;
+                if (bassCollapsed != null) bassCollapsed.Visibility = Visibility.Collapsed;
 
-                if (SpatialExpandedView != null) SpatialExpandedView.Visibility = Visibility.Visible;
-                if (SpatialCollapsedView != null) SpatialCollapsedView.Visibility = Visibility.Collapsed;
+                if (spatialExpanded != null) spatialExpanded.Visibility = Visibility.Visible;
+                if (spatialCollapsed != null) spatialCollapsed.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -492,6 +500,17 @@ namespace EqualizerPro
 
                 if (EqFreqResponsePanel != null) EqFreqResponsePanel.BeginAnimation(UIElement.OpacityProperty, fadeAnim);
                 if (EqSpectrumPanel != null) EqSpectrumPanel.BeginAnimation(UIElement.OpacityProperty, fadeAnim);
+            }
+        }
+
+        private void OSBlurToggle_Click(object? sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleButton toggle)
+            {
+                _isOSBlurEnabled = toggle.IsChecked ?? true;
+                SetModeColors(_isDarkMode);
+                SyncThemeVariablesToTarget();
+                PushColorsToUI();
             }
         }
 
@@ -972,11 +991,12 @@ namespace EqualizerPro
                 string superBassState = _isSuperBassEnabled.ToString();
                 string spatialState = _isSpatialSoundEnabled.ToString();
                 string specStyle = _spectrumStyle.ToString();
+                string osBlurState = _isOSBlurEnabled.ToString();
 
                 File.WriteAllLines(GetSettingsFilePath(), new string[] {
                     currentPreset, toggleState, darkModeState, accentColorHex,
                     alwaysOnTopState, minTrayState, startWinState, fpsIndex, falloffValue,
-                    ecoModeState, fatModeState, superBassState, spatialState, specStyle
+                    ecoModeState, fatModeState, superBassState, spatialState, specStyle, osBlurState
                 });
             }
             catch { }
@@ -1016,7 +1036,6 @@ namespace EqualizerPro
                         {
                             _isDarkMode = isDark;
                             ModeSwitchBtn.Content = _isDarkMode ? "☀" : "🌙";
-                            SetModeColors(_isDarkMode);
                         }
                     }
 
@@ -1142,6 +1161,16 @@ namespace EqualizerPro
                         }
                     }
 
+                    if (lines.Length >= 15 && OSBlurToggle != null)
+                    {
+                        if (bool.TryParse(lines[14], out bool isBlur))
+                        {
+                            _isOSBlurEnabled = isBlur;
+                            OSBlurToggle.IsChecked = isBlur;
+                        }
+                    }
+
+                    SetModeColors(_isDarkMode);
                     SyncThemeVariablesToTarget();
                 }
             }
@@ -1535,9 +1564,10 @@ namespace EqualizerPro
 
         private void SetModeColors(bool isDark)
         {
+            byte alpha = _isOSBlurEnabled ? (byte)153 : (byte)240;
             if (isDark)
             {
-                _tarWindowBg = Color.FromArgb(153, 11, 14, 20);
+                _tarWindowBg = Color.FromArgb(alpha, 11, 14, 20);
                 _tarPanelBg = Color.FromArgb(115, 11, 14, 20);
                 _tarText = Colors.White;
                 _tarMutedText = Color.FromRgb(169, 177, 214);
@@ -1547,7 +1577,7 @@ namespace EqualizerPro
             }
             else
             {
-                _tarWindowBg = Color.FromArgb(190, 240, 244, 248);
+                _tarWindowBg = Color.FromArgb(alpha, 240, 244, 248);
                 _tarPanelBg = Color.FromArgb(170, 255, 255, 255);
                 _tarText = Color.FromRgb(10, 15, 25);
                 _tarMutedText = Color.FromRgb(85, 95, 115);
@@ -1636,7 +1666,9 @@ namespace EqualizerPro
                     RadiusX = 1.5,
                     RadiusY = 1.2
                 };
-                windowGradient.GradientStops.Add(new GradientStop(Color.FromArgb(80, _currentAccent.R, _currentAccent.G, _currentAccent.B), 0.0));
+
+                byte highlightAlpha = _isOSBlurEnabled ? (byte)80 : (byte)140;
+                windowGradient.GradientStops.Add(new GradientStop(Color.FromArgb(highlightAlpha, _currentAccent.R, _currentAccent.G, _currentAccent.B), 0.0));
                 windowGradient.GradientStops.Add(new GradientStop(_curWindowBg, 0.6));
                 windowGradient.Freeze();
                 this.Resources["WindowBgBrush"] = windowGradient;
@@ -1703,15 +1735,21 @@ namespace EqualizerPro
                 if (windowHelper.Handle == IntPtr.Zero) return;
 
                 var accent = new AccentPolicy();
-                accent.AccentState = AccentState.ACCENT_ENABLE_ACRYLICBLURBEHIND;
 
-                byte a = 120;
-                byte r = _curWindowBg.R;
-                byte g = _curWindowBg.G;
-                byte b = _curWindowBg.B;
-                uint abgr = (uint)((a << 24) | (b << 16) | (g << 8) | r);
-
-                accent.GradientColor = abgr;
+                if (_isOSBlurEnabled)
+                {
+                    accent.AccentState = AccentState.ACCENT_ENABLE_ACRYLICBLURBEHIND;
+                    byte a = 120;
+                    byte r = _curWindowBg.R;
+                    byte g = _curWindowBg.G;
+                    byte b = _curWindowBg.B;
+                    uint abgr = (uint)((a << 24) | (b << 16) | (g << 8) | r);
+                    accent.GradientColor = abgr;
+                }
+                else
+                {
+                    accent.AccentState = AccentState.ACCENT_DISABLED;
+                }
 
                 var accentStructSize = Marshal.SizeOf(accent);
                 var accentPtr = Marshal.AllocHGlobal(accentStructSize);
