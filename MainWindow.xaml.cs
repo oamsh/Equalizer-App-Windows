@@ -515,16 +515,19 @@ namespace EqualizerPro
             NavRecordActive.Visibility = Visibility.Collapsed;
             NavRecordBtn.Visibility = Visibility.Visible;
 
-            RecordBlinkDot.BeginAnimation(UIElement.OpacityProperty, null);
+            // Added '!' to safely bypass the null warning (CS8625)
+            RecordBlinkDot.BeginAnimation(UIElement.OpacityProperty, null!);
             RecordBlinkDot.Opacity = 1.0;
 
             if (RecordBlinkDot.Effect is DropShadowEffect glow)
             {
-                glow.BeginAnimation(DropShadowEffect.BlurRadiusProperty, null);
+                // Added '!' to safely bypass the null warning
+                glow.BeginAnimation(DropShadowEffect.BlurRadiusProperty, null!);
             }
             RecordBlinkDot.Effect = null;
 
-            NavRecordActive.Background = (SolidColorBrush)FindResource("GlassOverlayBrush");
+            // Explicitly using the WPF Brush namespace to resolve the CS0104 error
+            NavRecordActive.Background = (System.Windows.Media.Brush)FindResource("GlassOverlayBrush");
         }
 
         private void LoopbackCapture_RecordingStopped(object? sender, StoppedEventArgs e)
