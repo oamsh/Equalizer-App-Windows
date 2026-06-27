@@ -28,7 +28,6 @@ using ComboBoxItem = System.Windows.Controls.ComboBoxItem;
 using Button = System.Windows.Controls.Button;
 using TextBox = System.Windows.Controls.TextBox;
 using Slider = System.Windows.Controls.Slider;
-using Expander = System.Windows.Controls.Expander;
 using ToggleButton = System.Windows.Controls.Primitives.ToggleButton;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 
@@ -202,7 +201,6 @@ namespace EqualizerPro
         {
             bool isCollapsed = SidebarToggleBtn.IsChecked ?? false;
 
-            // Animate Sidebar Width
             DoubleAnimation widthAnim = new DoubleAnimation
             {
                 To = isCollapsed ? 80 : 220,
@@ -211,7 +209,6 @@ namespace EqualizerPro
             };
             SidebarBorder.BeginAnimation(WidthProperty, widthAnim);
 
-            // Animate Arrow Icon
             DoubleAnimation rotateAnim = new DoubleAnimation
             {
                 To = isCollapsed ? 180 : 0,
@@ -220,7 +217,6 @@ namespace EqualizerPro
             };
             SidebarArrowTransform.BeginAnimation(RotateTransform.AngleProperty, rotateAnim);
 
-            // Hide/Show Text Elements
             Visibility textVis = isCollapsed ? Visibility.Collapsed : Visibility.Visible;
 
             if (NavEqActiveText != null) NavEqActiveText.Visibility = textVis;
@@ -229,40 +225,14 @@ namespace EqualizerPro
             if (NavPlaybackText != null) NavPlaybackText.Visibility = textVis;
             if (RecordTimeText != null) RecordTimeText.Visibility = textVis;
             if (NavRecordText != null) NavRecordText.Visibility = textVis;
+
+            // Analog text hide/show
+            if (NavAnalogActiveText != null) NavAnalogActiveText.Visibility = textVis;
+            if (NavAnalogText != null) NavAnalogText.Visibility = textVis;
+
             if (NavSettingsActiveText != null) NavSettingsActiveText.Visibility = textVis;
             if (NavSettingsText != null) NavSettingsText.Visibility = textVis;
             if (NavAboutText != null) NavAboutText.Visibility = textVis;
-
-            // Swap to/from Compact Pro Features view dynamically using FindName to avoid CS0103 errors
-            var fatExpanded = this.FindName("FatExpandedView") as UIElement;
-            var fatCollapsed = this.FindName("FatCollapsedView") as UIElement;
-            var bassExpanded = this.FindName("BassExpandedView") as UIElement;
-            var bassCollapsed = this.FindName("BassCollapsedView") as UIElement;
-            var spatialExpanded = this.FindName("SpatialExpandedView") as UIElement;
-            var spatialCollapsed = this.FindName("SpatialCollapsedView") as UIElement;
-
-            if (isCollapsed)
-            {
-                if (fatExpanded != null) fatExpanded.Visibility = Visibility.Collapsed;
-                if (fatCollapsed != null) fatCollapsed.Visibility = Visibility.Visible;
-
-                if (bassExpanded != null) bassExpanded.Visibility = Visibility.Collapsed;
-                if (bassCollapsed != null) bassCollapsed.Visibility = Visibility.Visible;
-
-                if (spatialExpanded != null) spatialExpanded.Visibility = Visibility.Collapsed;
-                if (spatialCollapsed != null) spatialCollapsed.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                if (fatExpanded != null) fatExpanded.Visibility = Visibility.Visible;
-                if (fatCollapsed != null) fatCollapsed.Visibility = Visibility.Collapsed;
-
-                if (bassExpanded != null) bassExpanded.Visibility = Visibility.Visible;
-                if (bassCollapsed != null) bassCollapsed.Visibility = Visibility.Collapsed;
-
-                if (spatialExpanded != null) spatialExpanded.Visibility = Visibility.Visible;
-                if (spatialCollapsed != null) spatialCollapsed.Visibility = Visibility.Collapsed;
-            }
         }
 
         private void EqExpandBtn_Click(object sender, RoutedEventArgs e)
@@ -300,6 +270,7 @@ namespace EqualizerPro
                 EqContentPanel.Visibility = Visibility.Collapsed;
                 if (PlaybackContentPanel != null) PlaybackContentPanel.Visibility = Visibility.Collapsed;
                 SettingsContentPanel.Visibility = Visibility.Collapsed;
+                if (AnalogContentPanel != null) AnalogContentPanel.Visibility = Visibility.Collapsed;
                 if (AppTitleText != null) AppTitleText.Visibility = Visibility.Collapsed;
                 if (BottomPlaybackBarBorder != null) BottomPlaybackBarBorder.Visibility = Visibility.Collapsed;
 
@@ -326,6 +297,7 @@ namespace EqualizerPro
                 if (_activePanel == 0) EqContentPanel.Visibility = Visibility.Visible;
                 else if (_activePanel == 2) SettingsContentPanel.Visibility = Visibility.Visible;
                 else if (_activePanel == 3 && PlaybackContentPanel != null) PlaybackContentPanel.Visibility = Visibility.Visible;
+                else if (_activePanel == 4 && AnalogContentPanel != null) AnalogContentPanel.Visibility = Visibility.Visible;
 
                 if (BottomPlaybackBarBorder != null)
                 {
@@ -343,7 +315,7 @@ namespace EqualizerPro
         private void EqualizerBtn_Click(object? sender, RoutedEventArgs e)
         {
             _activePanel = 0;
-            if (NavEqActive == null || NavSettingsActive == null || NavPlaybackActive == null) return;
+            if (NavEqActive == null || NavSettingsActive == null || NavPlaybackActive == null || NavAnalogActive == null) return;
 
             NavEqActive.Visibility = Visibility.Visible;
             NavEqBtn.Visibility = Visibility.Collapsed;
@@ -354,8 +326,12 @@ namespace EqualizerPro
             NavSettingsActive.Visibility = Visibility.Collapsed;
             NavSettingsBtn.Visibility = Visibility.Visible;
 
+            NavAnalogActive.Visibility = Visibility.Collapsed;
+            NavAnalogBtn.Visibility = Visibility.Visible;
+
             SettingsContentPanel.Visibility = Visibility.Collapsed;
             if (PlaybackContentPanel != null) PlaybackContentPanel.Visibility = Visibility.Collapsed;
+            if (AnalogContentPanel != null) AnalogContentPanel.Visibility = Visibility.Collapsed;
             EqContentPanel.Visibility = Visibility.Visible;
 
             if (BottomPlaybackBarBorder != null) BottomPlaybackBarBorder.Visibility = Visibility.Visible;
@@ -367,7 +343,7 @@ namespace EqualizerPro
         private void PlaybackNavBtn_Click(object? sender, RoutedEventArgs e)
         {
             _activePanel = 3;
-            if (NavEqActive == null || NavSettingsActive == null || NavPlaybackActive == null) return;
+            if (NavEqActive == null || NavSettingsActive == null || NavPlaybackActive == null || NavAnalogActive == null) return;
 
             NavEqActive.Visibility = Visibility.Collapsed;
             NavEqBtn.Visibility = Visibility.Visible;
@@ -378,8 +354,12 @@ namespace EqualizerPro
             NavSettingsActive.Visibility = Visibility.Collapsed;
             NavSettingsBtn.Visibility = Visibility.Visible;
 
+            NavAnalogActive.Visibility = Visibility.Collapsed;
+            NavAnalogBtn.Visibility = Visibility.Visible;
+
             EqContentPanel.Visibility = Visibility.Collapsed;
             SettingsContentPanel.Visibility = Visibility.Collapsed;
+            if (AnalogContentPanel != null) AnalogContentPanel.Visibility = Visibility.Collapsed;
             if (PlaybackContentPanel != null) PlaybackContentPanel.Visibility = Visibility.Visible;
 
             if (BottomPlaybackBarBorder != null) BottomPlaybackBarBorder.Visibility = Visibility.Collapsed;
@@ -391,7 +371,7 @@ namespace EqualizerPro
         private void SettingsBtn_Click(object? sender, RoutedEventArgs e)
         {
             _activePanel = 2;
-            if (NavEqActive == null || NavSettingsActive == null || NavPlaybackActive == null) return;
+            if (NavEqActive == null || NavSettingsActive == null || NavPlaybackActive == null || NavAnalogActive == null) return;
 
             NavEqActive.Visibility = Visibility.Collapsed;
             NavEqBtn.Visibility = Visibility.Visible;
@@ -402,14 +382,46 @@ namespace EqualizerPro
             NavSettingsActive.Visibility = Visibility.Visible;
             NavSettingsBtn.Visibility = Visibility.Collapsed;
 
+            NavAnalogActive.Visibility = Visibility.Collapsed;
+            NavAnalogBtn.Visibility = Visibility.Visible;
+
             EqContentPanel.Visibility = Visibility.Collapsed;
             if (PlaybackContentPanel != null) PlaybackContentPanel.Visibility = Visibility.Collapsed;
+            if (AnalogContentPanel != null) AnalogContentPanel.Visibility = Visibility.Collapsed;
             SettingsContentPanel.Visibility = Visibility.Visible;
 
             if (BottomPlaybackBarBorder != null) BottomPlaybackBarBorder.Visibility = Visibility.Visible;
 
             var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250));
             SettingsContentPanel.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+        }
+
+        private void AnalogBtn_Click(object? sender, RoutedEventArgs e)
+        {
+            _activePanel = 4;
+            if (NavEqActive == null || NavSettingsActive == null || NavPlaybackActive == null || NavAnalogActive == null) return;
+
+            NavEqActive.Visibility = Visibility.Collapsed;
+            NavEqBtn.Visibility = Visibility.Visible;
+
+            NavPlaybackActive.Visibility = Visibility.Collapsed;
+            NavPlaybackBtn.Visibility = Visibility.Visible;
+
+            NavSettingsActive.Visibility = Visibility.Collapsed;
+            NavSettingsBtn.Visibility = Visibility.Visible;
+
+            NavAnalogActive.Visibility = Visibility.Visible;
+            NavAnalogBtn.Visibility = Visibility.Collapsed;
+
+            EqContentPanel.Visibility = Visibility.Collapsed;
+            if (PlaybackContentPanel != null) PlaybackContentPanel.Visibility = Visibility.Collapsed;
+            SettingsContentPanel.Visibility = Visibility.Collapsed;
+            if (AnalogContentPanel != null) AnalogContentPanel.Visibility = Visibility.Visible;
+
+            if (BottomPlaybackBarBorder != null) BottomPlaybackBarBorder.Visibility = Visibility.Visible;
+
+            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250));
+            AnalogContentPanel?.BeginAnimation(UIElement.OpacityProperty, fadeIn);
         }
 
         private void FatModeToggle_Click(object? sender, RoutedEventArgs e)

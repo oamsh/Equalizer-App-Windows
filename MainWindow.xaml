@@ -467,7 +467,6 @@
                     <TextBlock x:Name="AppTitleText" Text="Equalizer Pro" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="14" Foreground="{DynamicResource TextBrush}"/>
 
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-
                         <TextBlock x:Name="CompactEqLabel" Text="EQ:" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="12" Visibility="{Binding Visibility, ElementName=CompactEqToggle}"/>
                         <ToggleButton x:Name="CompactEqToggle" Style="{StaticResource ToggleSwitchStyle}" IsChecked="True" Visibility="Collapsed" Click="CompactEqToggle_Click" Margin="0,0,20,0" ToolTip="Enable/Disable Equalizer"/>
 
@@ -548,6 +547,19 @@
                                         </StackPanel>
                                     </Button>
 
+                                    <Border x:Name="NavAnalogActive" Style="{StaticResource GlassOverlay}" Padding="15,12" Margin="0,0,0,5" Visibility="Collapsed">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Path Stroke="{DynamicResource AccentBrush}" StrokeThickness="1.5" Fill="Transparent" Stretch="Uniform" Width="14" Height="14" Data="M2,10 L6,2 L10,14 L14,6"/>
+                                            <TextBlock x:Name="NavAnalogActiveText" Text="Analog FX" Foreground="{DynamicResource TextBrush}" Margin="15,0,0,0" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Button x:Name="NavAnalogBtn" Style="{StaticResource DarkButton}" BorderThickness="0" Padding="15,12" HorizontalContentAlignment="Left" Margin="0,0,0,5" Click="AnalogBtn_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Path Stroke="{DynamicResource MutedTextBrush}" StrokeThickness="1.5" Fill="Transparent" Stretch="Uniform" Width="14" Height="14" Data="M2,10 L6,2 L10,14 L14,6"/>
+                                            <TextBlock x:Name="NavAnalogText" Text="Analog FX" Margin="15,0,0,0" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+
                                     <Border x:Name="NavSettingsActive" Style="{StaticResource GlassOverlay}" Padding="15,12" Margin="0,0,0,5" Visibility="Collapsed">
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                             <TextBlock Text="⚙" Foreground="{DynamicResource AccentBrush}" FontSize="16" FontFamily="Segoe UI Symbol" Margin="0,-2,0,0"/>
@@ -569,49 +581,6 @@
                                     </Button>
                                 </StackPanel>
 
-                                <StackPanel x:Name="ProFeaturesPanel" Grid.Row="1" Margin="15,0,15,20">
-                                    <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,0,0,15"/>
-
-                                    <Grid>
-                                        <StackPanel x:Name="FatExpandedView">
-                                            <TextBlock Text="Analog Fatness" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,0,0,8" ToolTip="Simulates analog saturation and warmth"/>
-                                            <ToggleButton x:Name="FatModeToggle" Style="{StaticResource ProFeatureToggleStyle}" IsChecked="False" Click="FatModeToggle_Click" Margin="0,0,0,8" HorizontalAlignment="Center"/>
-                                            <TextBlock Text="Saturation / Warmth" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" HorizontalAlignment="Center"/>
-                                        </StackPanel>
-                                        <StackPanel x:Name="FatCollapsedView" Visibility="Collapsed">
-                                            <TextBlock Text="FAT" FontWeight="Bold" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,0,0,8" ToolTip="Simulates analog saturation and warmth"/>
-                                            <ToggleButton x:Name="FatModeCompactToggle" Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding IsChecked, ElementName=FatModeToggle, Mode=TwoWay}" Click="FatModeToggle_Click" HorizontalAlignment="Center" ToolTip="Analog Fatness"/>
-                                        </StackPanel>
-                                    </Grid>
-
-                                    <Border Height="1" Background="{DynamicResource GlassOverlayBrush}" Margin="20,15,20,15"/>
-
-                                    <Grid>
-                                        <StackPanel x:Name="BassExpandedView">
-                                            <TextBlock Text="Super Bass" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,0,0,8" ToolTip="Deep punchy bass without distortion"/>
-                                            <ToggleButton x:Name="SuperBassToggle" Style="{StaticResource ProFeatureToggleStyle}" IsChecked="False" Click="SuperBassToggle_Click" Margin="0,0,0,8" HorizontalAlignment="Center"/>
-                                            <TextBlock Text="Clean Low-End" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" HorizontalAlignment="Center"/>
-                                        </StackPanel>
-                                        <StackPanel x:Name="BassCollapsedView" Visibility="Collapsed">
-                                            <TextBlock Text="BASS" FontWeight="Bold" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,0,0,8" ToolTip="Deep punchy bass without distortion"/>
-                                            <ToggleButton x:Name="SuperBassCompactToggle" Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding IsChecked, ElementName=SuperBassToggle, Mode=TwoWay}" Click="SuperBassToggle_Click" HorizontalAlignment="Center" ToolTip="Super Bass"/>
-                                        </StackPanel>
-                                    </Grid>
-
-                                    <Border Height="1" Background="{DynamicResource GlassOverlayBrush}" Margin="20,15,20,15"/>
-
-                                    <Grid>
-                                        <StackPanel x:Name="SpatialExpandedView">
-                                            <TextBlock Text="3D Spatial" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,0,0,8" ToolTip="Virtual surround and stereo widening"/>
-                                            <ToggleButton x:Name="SpatialSoundToggle" Style="{StaticResource ProFeatureToggleStyle}" IsChecked="False" Click="SpatialSoundToggle_Click" Margin="0,0,0,8" HorizontalAlignment="Center"/>
-                                            <TextBlock Text="Immersive Audio" Foreground="{DynamicResource MutedTextBrush}" FontSize="10" HorizontalAlignment="Center"/>
-                                        </StackPanel>
-                                        <StackPanel x:Name="SpatialCollapsedView" Visibility="Collapsed">
-                                            <TextBlock Text="3D" FontWeight="Bold" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,0,0,8" ToolTip="Virtual surround and stereo widening"/>
-                                            <ToggleButton x:Name="SpatialSoundCompactToggle" Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding IsChecked, ElementName=SpatialSoundToggle, Mode=TwoWay}" Click="SpatialSoundToggle_Click" HorizontalAlignment="Center" ToolTip="3D Spatial"/>
-                                        </StackPanel>
-                                    </Grid>
-                                </StackPanel>
                             </Grid>
                         </Border>
 
@@ -1342,6 +1311,65 @@
                                 </Button>
 
                             </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Border x:Name="AnalogContentPanel" Grid.Column="1" Style="{StaticResource GlassPanel}" Margin="0,0,10,10" Padding="25" Visibility="Collapsed">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Text="Analog &amp; Pro Features" FontWeight="SemiBold" FontSize="20" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,20"/>
+
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel Margin="0,0,10,0">
+
+                                    <Border Style="{StaticResource GlassOverlay}" Padding="20" Margin="0,0,0,15">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="Analog Fatness" Foreground="{DynamicResource TextBrush}" FontSize="16" FontWeight="SemiBold"/>
+                                                <TextBlock Text="Simulates analog saturation and warmth. Great for giving a fuller sound to thin-sounding tracks." Foreground="{DynamicResource MutedTextBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                            <ToggleButton x:Name="FatModeToggle" Grid.Column="1" Style="{StaticResource ProFeatureToggleStyle}" IsChecked="False" Click="FatModeToggle_Click" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+
+                                    <Border Style="{StaticResource GlassOverlay}" Padding="20" Margin="0,0,0,15">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="Super Bass" Foreground="{DynamicResource TextBrush}" FontSize="16" FontWeight="SemiBold"/>
+                                                <TextBlock Text="Enhances low frequencies to deliver deep, punchy bass without causing distortion. Perfect for electronic and dance music." Foreground="{DynamicResource MutedTextBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                            <ToggleButton x:Name="SuperBassToggle" Grid.Column="1" Style="{StaticResource ProFeatureToggleStyle}" IsChecked="False" Click="SuperBassToggle_Click" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+
+                                    <Border Style="{StaticResource GlassOverlay}" Padding="20" Margin="0,0,0,15">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock Text="3D Spatial" Foreground="{DynamicResource TextBrush}" FontSize="16" FontWeight="SemiBold"/>
+                                                <TextBlock Text="Applies virtual surround processing and stereo widening to create an immersive audio experience." Foreground="{DynamicResource MutedTextBrush}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                            <ToggleButton x:Name="SpatialSoundToggle" Grid.Column="1" Style="{StaticResource ProFeatureToggleStyle}" IsChecked="False" Click="SpatialSoundToggle_Click" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+
+                                </StackPanel>
+                            </ScrollViewer>
                         </Grid>
                     </Border>
 
