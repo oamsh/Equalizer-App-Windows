@@ -267,6 +267,9 @@ namespace EqualizerPro
             {
                 CompactModeBtn.Content = "🗖";
 
+                this.MinWidth = 680;
+                this.MinHeight = 260;
+
                 SidebarBorder.Visibility = Visibility.Collapsed;
                 if (SidebarToggleBtn != null) SidebarToggleBtn.Visibility = Visibility.Collapsed;
                 EqContentPanel.Visibility = Visibility.Collapsed;
@@ -282,12 +285,18 @@ namespace EqualizerPro
                 DoubleAnimation widthAnim = new DoubleAnimation(this.ActualWidth, 680, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
                 DoubleAnimation heightAnim = new DoubleAnimation(this.ActualHeight, 260, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
 
+                widthAnim.Completed += (s, ev) => { this.BeginAnimation(Window.WidthProperty, null); this.Width = 680; };
+                heightAnim.Completed += (s, ev) => { this.BeginAnimation(Window.HeightProperty, null); this.Height = 260; };
+
                 this.BeginAnimation(Window.WidthProperty, widthAnim);
                 this.BeginAnimation(Window.HeightProperty, heightAnim);
             }
             else
             {
                 CompactModeBtn.Content = "🗗";
+
+                this.MinWidth = 850;
+                this.MinHeight = 600;
 
                 if (CompactEqToggle != null) CompactEqToggle.Visibility = Visibility.Collapsed;
                 if (CompactPlaybackPanel != null) CompactPlaybackPanel.Visibility = Visibility.Collapsed;
@@ -308,6 +317,9 @@ namespace EqualizerPro
 
                 DoubleAnimation widthAnim = new DoubleAnimation(this.ActualWidth, 1100, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
                 DoubleAnimation heightAnim = new DoubleAnimation(this.ActualHeight, 768, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
+
+                widthAnim.Completed += (s, ev) => { this.BeginAnimation(Window.WidthProperty, null); this.Width = 1100; };
+                heightAnim.Completed += (s, ev) => { this.BeginAnimation(Window.HeightProperty, null); this.Height = 768; };
 
                 this.BeginAnimation(Window.WidthProperty, widthAnim);
                 this.BeginAnimation(Window.HeightProperty, heightAnim);
