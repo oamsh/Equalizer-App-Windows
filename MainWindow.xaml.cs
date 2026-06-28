@@ -291,6 +291,7 @@ namespace EqualizerPro
             if (_isCompactMode)
             {
                 CompactModeBtn.Content = "🗖";
+                if (MaximizeBtn != null) MaximizeBtn.IsEnabled = false; // Disable maximize in compact mode
 
                 this.MinWidth = 680;
                 this.MinHeight = 260;
@@ -319,6 +320,7 @@ namespace EqualizerPro
             else
             {
                 CompactModeBtn.Content = "🗗";
+                if (MaximizeBtn != null) MaximizeBtn.IsEnabled = true; // Re-enable maximize in normal mode
 
                 this.MinWidth = 850;
                 this.MinHeight = 600;
@@ -1973,36 +1975,25 @@ namespace EqualizerPro
             // Phase Correlation Calculation
             if (isActuallyPlayingAudio)
             {
-                double targetCorrelation = 1.0;
+                double targetCorrelation = 0;
                 if (!_isStereoEnabled)
                 {
-                    // If forced Mono, the signal is perfectly correlated (+1)
-                    targetCorrelation = 0.95 + (_rand.NextDouble() * 0.05);
+                    targetCorrelation = 0.95 + (_rand.NextDouble() * 0.05); // Mono is +1
                 }
                 else
                 {
-                    // Calculate difference in peaks. Wider differences mean wider stereo (lower correlation)
                     double phaseDiff = Math.Abs(_leftDbCurrent - _rightDbCurrent);
+                    targetCorrelation = 0.7 - (phaseDiff * 2.0) - (_rand.NextDouble() * 0.3);
 
-                    // Base stereo correlation for normal music fluctuates between +0.2 and +0.8.
-                    // We use random noise mapped to the signal intensity to simulate complex phase differences.
-                    double stereoComplexity = (_rand.NextDouble() * 0.5) * ((_leftDbCurrent + _rightDbCurrent) / 2.0);
-
-                    targetCorrelation = 0.8 - (phaseDiff * 2.5) - stereoComplexity;
-
-                    // If spatial is on, push heavily into the negatives (out of phase)
+                    // Force negative for phase cancellation
                     if (_isSpatialSoundEnabled) targetCorrelation -= 0.8;
-                    if (Math.Abs(_panValue) > 0) targetCorrelation -= (Math.Abs(_panValue) / 100.0) * 0.5;
+                    if (_panValue != 0) targetCorrelation -= (Math.Abs(_panValue) / 100.0) * 0.5;
                 }
 
                 if (targetCorrelation > 1) targetCorrelation = 1;
                 if (targetCorrelation < -1) targetCorrelation = -1;
 
-                // SNAPPY UPDATE SPEED: Fast drop when going wide, slight ease when returning to mono
-                if (targetCorrelation < _currentCorrelation)
-                    _currentCorrelation += (targetCorrelation - _currentCorrelation) * 0.5;
-                else
-                    _currentCorrelation += (targetCorrelation - _currentCorrelation) * 0.15;
+                _currentCorrelation += (targetCorrelation - _currentCorrelation) * 0.1;
             }
             else
             {
