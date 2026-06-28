@@ -843,31 +843,28 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
-                            <Border x:Name="GoniometerPanel" Grid.Column="0" Style="{StaticResource GlassPanel}" Margin="0,0,5,0" Padding="15">
+                            <Border x:Name="VectorscopePanel" Grid.Column="0" Style="{StaticResource GlassPanel}" Margin="0,0,5,0" Padding="15">
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="*"/>
                                     </Grid.RowDefinitions>
 
-                                    <TextBlock Text="Goniometer" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}"/>
+                                    <TextBlock Text="Vectorscope" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}"/>
 
                                     <Grid Grid.Row="1" Margin="0,15,0,0">
                                         <Viewbox Stretch="Uniform" Margin="10">
-                                            <Grid Width="100" Height="100">
-                                                <Ellipse Stroke="{DynamicResource BorderBrush}" StrokeThickness="1" StrokeDashArray="2 4"/>
-                                                <Line X1="50" Y1="0" X2="50" Y2="100" Stroke="{DynamicResource BorderBrush}" StrokeThickness="1" StrokeDashArray="2 4"/>
-                                                <Line X1="0" Y1="50" X2="100" Y2="50" Stroke="{DynamicResource BorderBrush}" StrokeThickness="1" StrokeDashArray="2 4"/>
+                                            <Grid Width="200" Height="100">
+                                                <Path Stroke="{DynamicResource BorderBrush}" StrokeThickness="1" Data="M 0,100 A 100,100 0 0,1 200,100"/>
 
-                                                <TextBlock Text="L" Foreground="{DynamicResource MutedTextBrush}" FontSize="8" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="15,15,0,0"/>
-                                                <TextBlock Text="R" Foreground="{DynamicResource MutedTextBrush}" FontSize="8" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,15,15,0"/>
+                                                <Line X1="100" Y1="100" X2="29.2" Y2="29.2" Stroke="{DynamicResource BorderBrush}" StrokeThickness="1"/>
+                                                <Line X1="100" Y1="100" X2="100" Y2="0" Stroke="{DynamicResource BorderBrush}" StrokeThickness="1"/>
+                                                <Line X1="100" Y1="100" X2="170.8" Y2="29.2" Stroke="{DynamicResource BorderBrush}" StrokeThickness="1"/>
 
-                                                <Path x:Name="GoniometerPathGlow" Stroke="{DynamicResource AccentBrush}" StrokeThickness="3" Opacity="0.4" HorizontalAlignment="Left" VerticalAlignment="Top">
-                                                    <Path.Effect>
-                                                        <BlurEffect Radius="6"/>
-                                                    </Path.Effect>
-                                                </Path>
-                                                <Path x:Name="GoniometerPath" Stroke="{DynamicResource AccentBrushLight}" StrokeThickness="1.5" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                                                <TextBlock Text="L" Foreground="{DynamicResource MutedTextBrush}" FontSize="12" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,0,0,-20"/>
+                                                <TextBlock Text="R" Foreground="{DynamicResource MutedTextBrush}" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,0,-20"/>
+
+                                                <Path x:Name="VectorscopePath" Fill="{DynamicResource AccentBrush}" Opacity="0.8" Stroke="{DynamicResource AccentBrushLight}" StrokeThickness="1" Stretch="None" HorizontalAlignment="Left" VerticalAlignment="Top"/>
                                             </Grid>
                                         </Viewbox>
                                     </Grid>
@@ -1624,14 +1621,14 @@
                                     </Border>
                                 </Grid>
 
-                                <TextBlock Grid.Row="1" Text="Om" Foreground="{DynamicResource TextBrush}" FontWeight="Bold" FontSize="26" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="1" Text="Harsh Shandilya" Foreground="{DynamicResource TextBrush}" FontWeight="Bold" FontSize="26" HorizontalAlignment="Center" Margin="0,0,0,8"/>
 
                                 <Border Grid.Row="2" Background="{DynamicResource GlassOverlayBrush}" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1" CornerRadius="12" HorizontalAlignment="Center" Padding="12,4" Margin="0,0,0,20">
-                                    <TextBlock Text="Software Developer" Foreground="{DynamicResource AccentBrushLight}" FontWeight="SemiBold" FontSize="12"/>
+                                    <TextBlock Text="UI/UX Designer" Foreground="{DynamicResource AccentBrushLight}" FontWeight="SemiBold" FontSize="12"/>
                                 </Border>
 
                                 <TextBlock Grid.Row="3" TextWrapping="Wrap" TextAlignment="Center" Foreground="{DynamicResource MutedTextBrush}" FontSize="13" LineHeight="22" Margin="0,0,0,25">
-                                    Passionate software developer specializing in C# and Unity game development. Dedicated to crafting immersive 3D experiences and efficient mechanics. Always exploring new technologies, from game engines to Android system modding, to build better solutions.
+                                    Passionate UI/UX Designer specializing in design systems, wireframing, and interactive prototyping. With over four years of experience at Wipro, I'm dedicated to crafting intuitive digital journeys and engaging cinematic aesthetics, always exploring new methodologies to build better user solutions.
                                 </TextBlock>
 
                                 <Border Grid.Row="4" Height="1" Background="{DynamicResource BorderBrush}" Margin="20,0,20,20"/>

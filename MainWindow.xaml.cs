@@ -75,7 +75,6 @@ namespace EqualizerPro
         private bool _isSuperBassEnabled = false;
         private bool _isSpatialSoundEnabled = false;
 
-        // NEW AUDIO STATE VARIABLES
         private bool _isStereoEnabled = true;
         private double _panValue = 0.0;
 
@@ -84,6 +83,11 @@ namespace EqualizerPro
         private double[] _spectrumTargets = new double[48];
         private double[] _spectrumCurrents = new double[48];
         private double _spectrumFalloffDropRate = 2.0;
+
+        // VECTORSCOPE ARRAYS
+        private double[] _vectorTargets = new double[60];
+        private double[] _vectorCurrents = new double[60];
+
         private bool _isEcoModeEnabled = false;
         private int _spectrumStyle = 0;
         private bool _isOSBlurEnabled = true;
@@ -131,7 +135,7 @@ namespace EqualizerPro
             if (VolumeSliderControl != null) VolumeSliderControl.IsMoveToPointEnabled = true;
             if (CompactVolumeSlider != null) CompactVolumeSlider.IsMoveToPointEnabled = true;
             if (SpectrumFalloffSlider != null) SpectrumFalloffSlider.IsMoveToPointEnabled = true;
-            if (PanFader != null) PanFader.IsMoveToPointEnabled = true; // Added Pan
+            if (PanFader != null) PanFader.IsMoveToPointEnabled = true;
 
             _eqSliders = new Slider[] { Slider1, Slider2, Slider3, Slider4, Slider5, Slider6, Slider7, Slider8, Slider9, Slider10 };
             InitializePresets();
@@ -154,6 +158,7 @@ namespace EqualizerPro
             _marqueeTimer.Start();
 
             for (int i = 0; i < 48; i++) _spectrumCurrents[i] = 2;
+            for (int i = 0; i < 60; i++) _vectorCurrents[i] = 0;
 
             Loaded += MainWindow_Loaded;
             InitializeSystemTray();
@@ -203,7 +208,6 @@ namespace EqualizerPro
             _isLoadingSettings = false;
         }
 
-        // NEW EVENT HANDLERS
         private void MonoStereoToggle_Click(object? sender, RoutedEventArgs e)
         {
             if (sender is ToggleButton toggle)
@@ -544,7 +548,7 @@ namespace EqualizerPro
                 double targetOpacity = _isEcoModeEnabled ? 0.3 : 1.0;
                 var fadeAnim = new DoubleAnimation(targetOpacity, TimeSpan.FromMilliseconds(300));
 
-                if (GoniometerPanel != null) GoniometerPanel.BeginAnimation(UIElement.OpacityProperty, fadeAnim);
+                if (VectorscopePanel != null) VectorscopePanel.BeginAnimation(UIElement.OpacityProperty, fadeAnim);
                 if (EqSpectrumPanel != null) EqSpectrumPanel.BeginAnimation(UIElement.OpacityProperty, fadeAnim);
             }
         }
@@ -1038,8 +1042,8 @@ namespace EqualizerPro
                 string spatialState = _isSpatialSoundEnabled.ToString();
                 string specStyle = _spectrumStyle.ToString();
                 string osBlurState = _isOSBlurEnabled.ToString();
-                string stereoState = _isStereoEnabled.ToString(); // NEW
-                string panValue = _panValue.ToString(); // NEW
+                string stereoState = _isStereoEnabled.ToString();
+                string panValue = _panValue.ToString();
 
                 File.WriteAllLines(GetSettingsFilePath(), new string[] {
                     currentPreset, toggleState, darkModeState, accentColorHex,
@@ -1165,7 +1169,7 @@ namespace EqualizerPro
                             EcoModeToggle.IsChecked = isEco;
 
                             double targetOpacity = _isEcoModeEnabled ? 0.3 : 1.0;
-                            if (GoniometerPanel != null) GoniometerPanel.Opacity = targetOpacity;
+                            if (VectorscopePanel != null) VectorscopePanel.Opacity = targetOpacity;
                             if (EqSpectrumPanel != null) EqSpectrumPanel.Opacity = targetOpacity;
                         }
                     }
@@ -1219,7 +1223,6 @@ namespace EqualizerPro
                         }
                     }
 
-                    // NEW SETTINGS: Mono/Stereo and Pan
                     if (lines.Length >= 16 && MonoStereoToggle != null)
                     {
                         if (bool.TryParse(lines[15], out bool isStereo))
@@ -1495,8 +1498,6 @@ namespace EqualizerPro
 
                         if (Math.Abs(_panValue) > 0.1)
                         {
-                            // If _panValue is negative (Left), Right channel gain drops to 0. 
-                            // Example: _panValue = -50. lMult = 1.0, rMult = 1.0 + (-0.5) = 0.5.
                             double lMult = _panValue < 0 ? 1.0 : 1.0 - (_panValue / 100.0);
                             double rMult = _panValue > 0 ? 1.0 : 1.0 + (_panValue / 100.0);
                             extraFilters += $"Copy: L={lMult:0.000}*L R={rMult:0.000}*R\n";
@@ -1866,7 +1867,7 @@ namespace EqualizerPro
 
             bool isActuallyPlayingAudio = !_isEcoModeEnabled && isPlayingState && currentPeak > 0.001f;
 
-            DrawGoniometer(isActuallyPlayingAudio);
+            DrawVectorscope(isActuallyPlayingAudio);
 
             if (EqSpectrumGrid != null)
             {
@@ -1974,51 +1975,104 @@ namespace EqualizerPro
             }
         }
 
-        private void DrawGoniometer(bool isPlaying)
+        private void DrawVectorscope(bool isPlaying)
         {
-            if (GoniometerPath == null || GoniometerPathGlow == null) return;
+            if (VectorscopePath == null) return;
+
+            int pointsCount = 60;
+            Point[] pts = new Point[pointsCount + 2];
+            double cx = 100;
+            double cy = 100;
+
+            pts[0] = new Point(cx, cy);
 
             if (!isPlaying || (_leftDbCurrent < 0.001 && _rightDbCurrent < 0.001))
             {
-                GoniometerPath.Data = null;
-                GoniometerPathGlow.Data = null;
-                return;
+                bool allZero = true;
+                for (int i = 0; i < pointsCount; i++)
+                {
+                    _vectorCurrents[i] -= 5.0;
+                    if (_vectorCurrents[i] <= 0) _vectorCurrents[i] = 0;
+                    else allZero = false;
+
+                    double t = (i / (double)(pointsCount - 1)) * Math.PI - (Math.PI / 2);
+                    double x = cx + Math.Sin(t) * _vectorCurrents[i];
+                    double y = cy - Math.Cos(t) * _vectorCurrents[i];
+                    pts[i + 1] = new Point(x, y);
+                }
+                pts[pointsCount + 1] = new Point(cx, cy);
+
+                if (allZero)
+                {
+                    VectorscopePath.Data = null;
+                    return;
+                }
             }
-
-            int pointsCount = 100;
-            Point[] pts = new Point[pointsCount];
-
-            double cx = 50;
-            double cy = 50;
-
-            double stereoWidth = _isSpatialSoundEnabled ? 2.5 : 1.2;
-
-            double time = DateTime.Now.TimeOfDay.TotalMilliseconds / 150.0;
-
-            double scaleL = _leftDbCurrent * 45.0;
-            double scaleR = _rightDbCurrent * 45.0;
-
-            for (int i = 0; i < pointsCount; i++)
+            else
             {
-                double t = (i / (double)(pointsCount - 1)) * Math.PI * 2;
+                double midDb = (_leftDbCurrent + _rightDbCurrent) / 2.0;
 
-                double mid = Math.Sin(t * 2 + time) * 0.6 + Math.Sin(t * 3 - time * 0.5) * 0.4;
-                double side = Math.Sin(t * 3 - time * 0.8) * 0.5 + Math.Cos(t * 4 + time) * 0.5;
+                for (int i = 0; i < pointsCount; i++)
+                {
+                    double t = (i / (double)(pointsCount - 1)) * Math.PI - (Math.PI / 2);
+                    double targetSignal = 0;
 
-                double noise = (_rand.NextDouble() - 0.5) * 0.05;
+                    if (!_isStereoEnabled)
+                    {
+                        double angDist = Math.Abs(t);
+                        double falloff = Math.Pow(Math.Max(0, 1.0 - (angDist / 0.15)), 3);
+                        targetSignal = midDb * falloff * 95.0;
 
-                double l = (mid - (side * stereoWidth) + noise) * scaleL;
-                double r = (mid + (side * stereoWidth) + noise) * scaleR;
+                        if (targetSignal > 5) targetSignal *= (_rand.NextDouble() * 0.2 + 0.9);
+                    }
+                    else
+                    {
+                        double lw = Math.Pow(Math.Max(0, -Math.Sin(t)), 4);
+                        double rw = Math.Pow(Math.Max(0, Math.Sin(t)), 4);
+                        double mw = Math.Pow(Math.Max(0, Math.Cos(t)), 8);
 
-                double x = (r - l) * 0.7071;
-                double y = (r + l) * 0.7071;
+                        double noise = _rand.NextDouble() * 0.6 + 0.4;
 
-                pts[i] = new Point(cx + x, cy - y);
+                        double lComp = lw * _leftDbCurrent;
+                        double rComp = rw * _rightDbCurrent;
+                        double mComp = mw * midDb;
+
+                        targetSignal = (lComp + rComp + mComp) * noise * 95.0;
+
+                        if (_isSpatialSoundEnabled) targetSignal *= 1.2;
+
+                        if (midDb > 0.02)
+                        {
+                            targetSignal = Math.Max(targetSignal, midDb * 12.0 * _rand.NextDouble());
+                        }
+                    }
+
+                    if (targetSignal > 100) targetSignal = 100;
+                    _vectorTargets[i] = targetSignal;
+
+                    if (_vectorTargets[i] > _vectorCurrents[i])
+                        _vectorCurrents[i] += (_vectorTargets[i] - _vectorCurrents[i]) * 0.6;
+                    else
+                        _vectorCurrents[i] -= 4.0;
+
+                    if (_vectorCurrents[i] < 0) _vectorCurrents[i] = 0;
+
+                    double x = cx + Math.Sin(t) * _vectorCurrents[i];
+                    double y = cy - Math.Cos(t) * _vectorCurrents[i];
+                    pts[i + 1] = new Point(x, y);
+                }
+                pts[pointsCount + 1] = new Point(cx, cy);
             }
 
-            var geom = CreateSmoothCurve(pts, false);
-            GoniometerPath.Data = geom;
-            GoniometerPathGlow.Data = geom;
+            StreamGeometry geometry = new StreamGeometry();
+            using (StreamGeometryContext ctx = geometry.Open())
+            {
+                ctx.BeginFigure(pts[0], true, true);
+                ctx.PolyLineTo(pts, true, false);
+            }
+            geometry.Freeze();
+
+            VectorscopePath.Data = geometry;
         }
 
         private void KeepTextCentered(double l, double r)
