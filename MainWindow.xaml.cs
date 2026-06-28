@@ -75,6 +75,10 @@ namespace EqualizerPro
         private bool _isSuperBassEnabled = false;
         private bool _isSpatialSoundEnabled = false;
 
+        // NEW AUDIO STATE VARIABLES
+        private bool _isStereoEnabled = true;
+        private double _panValue = 0.0;
+
         private DispatcherTimer _visualizerTimer;
 
         private double[] _spectrumTargets = new double[48];
@@ -127,6 +131,7 @@ namespace EqualizerPro
             if (VolumeSliderControl != null) VolumeSliderControl.IsMoveToPointEnabled = true;
             if (CompactVolumeSlider != null) CompactVolumeSlider.IsMoveToPointEnabled = true;
             if (SpectrumFalloffSlider != null) SpectrumFalloffSlider.IsMoveToPointEnabled = true;
+            if (PanFader != null) PanFader.IsMoveToPointEnabled = true; // Added Pan
 
             _eqSliders = new Slider[] { Slider1, Slider2, Slider3, Slider4, Slider5, Slider6, Slider7, Slider8, Slider9, Slider10 };
             InitializePresets();
@@ -196,6 +201,23 @@ namespace EqualizerPro
 
             _visualizerTimer.Start();
             _isLoadingSettings = false;
+        }
+
+        // NEW EVENT HANDLERS
+        private void MonoStereoToggle_Click(object? sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleButton toggle)
+            {
+                _isStereoEnabled = toggle.IsChecked ?? true;
+                ApplyEqToAudioStream();
+            }
+        }
+
+        private void PanFader_ValueChanged(object? sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (_isLoadingSettings) return;
+            _panValue = e.NewValue;
+            ApplyEqToAudioStream();
         }
 
         private void SidebarToggleBtn_Click(object sender, RoutedEventArgs e)
@@ -1016,11 +1038,14 @@ namespace EqualizerPro
                 string spatialState = _isSpatialSoundEnabled.ToString();
                 string specStyle = _spectrumStyle.ToString();
                 string osBlurState = _isOSBlurEnabled.ToString();
+                string stereoState = _isStereoEnabled.ToString(); // NEW
+                string panValue = _panValue.ToString(); // NEW
 
                 File.WriteAllLines(GetSettingsFilePath(), new string[] {
                     currentPreset, toggleState, darkModeState, accentColorHex,
                     alwaysOnTopState, minTrayState, startWinState, fpsIndex, falloffValue,
-                    ecoModeState, fatModeState, superBassState, spatialState, specStyle, osBlurState
+                    ecoModeState, fatModeState, superBassState, spatialState, specStyle,
+                    osBlurState, stereoState, panValue
                 });
             }
             catch { }
@@ -1191,6 +1216,25 @@ namespace EqualizerPro
                         {
                             _isOSBlurEnabled = isBlur;
                             OSBlurToggle.IsChecked = isBlur;
+                        }
+                    }
+
+                    // NEW SETTINGS: Mono/Stereo and Pan
+                    if (lines.Length >= 16 && MonoStereoToggle != null)
+                    {
+                        if (bool.TryParse(lines[15], out bool isStereo))
+                        {
+                            _isStereoEnabled = isStereo;
+                            MonoStereoToggle.IsChecked = isStereo;
+                        }
+                    }
+
+                    if (lines.Length >= 17 && PanFader != null)
+                    {
+                        if (double.TryParse(lines[16], out double pan))
+                        {
+                            _panValue = pan;
+                            PanFader.Value = pan;
                         }
                     }
 
@@ -1418,6 +1462,7 @@ namespace EqualizerPro
                         double preampComp = 0.0;
                         string extraFilters = "";
 
+                        // 1. Core Effects
                         if (_isFatModeEnabled)
                         {
                             preampComp -= 3.5;
@@ -1440,6 +1485,24 @@ namespace EqualizerPro
                             extraFilters += "Filter: ON PK Fc 6000 Hz Gain 2.0 dB Q 1.0\n";
                         }
 
+                        // 2. Mono / Panning (Executed last to manipulate final left/right channels)
+                        if (!_isStereoEnabled)
+                        {
+                            // Mix to mono safely (0.5 to prevent clipping when summing channels)
+                            extraFilters += "Copy: L_TMP=L R_TMP=R\n";
+                            extraFilters += "Copy: L=0.5*L_TMP+0.5*R_TMP R=0.5*L_TMP+0.5*R_TMP\n";
+                        }
+
+                        if (Math.Abs(_panValue) > 0.1)
+                        {
+                            // If _panValue is negative (Left), Right channel gain drops to 0. 
+                            // Example: _panValue = -50. lMult = 1.0, rMult = 1.0 + (-0.5) = 0.5.
+                            double lMult = _panValue < 0 ? 1.0 : 1.0 - (_panValue / 100.0);
+                            double rMult = _panValue > 0 ? 1.0 : 1.0 + (_panValue / 100.0);
+                            extraFilters += $"Copy: L={lMult:0.000}*L R={rMult:0.000}*R\n";
+                        }
+
+                        // Build the final script
                         eqCommand += $"Preamp: {preampComp:0.0} dB\n";
                         eqCommand += extraFilters;
 

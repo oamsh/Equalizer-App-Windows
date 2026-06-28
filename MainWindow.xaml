@@ -1393,6 +1393,40 @@
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0,0,10,0">
+
+                                <Border Style="{StaticResource GlassOverlay}" Padding="15,5" Margin="0,0,20,0">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,15,0">
+                                            <TextBlock Text="MODE" FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                                <TextBlock Text="M" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                                <ToggleButton x:Name="MonoStereoToggle" Style="{StaticResource ToggleSwitchStyle}" IsChecked="True" VerticalAlignment="Center" Click="MonoStereoToggle_Click">
+                                                    <ToggleButton.LayoutTransform>
+                                                        <ScaleTransform ScaleX="0.75" ScaleY="0.75"/>
+                                                    </ToggleButton.LayoutTransform>
+                                                </ToggleButton>
+                                                <TextBlock Text="S" FontSize="10" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <Border Width="1" Background="{DynamicResource BorderBrush}" Margin="0,5,15,5"/>
+
+                                        <StackPanel VerticalAlignment="Center" Width="90">
+                                            <Grid Margin="0,0,0,2">
+                                                <TextBlock Text="PAN" FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Left"/>
+                                                <TextBlock Text="{Binding Value, ElementName=PanFader, StringFormat={}{0:0}}" FontSize="9" Foreground="{DynamicResource TextBrush}" HorizontalAlignment="Right"/>
+                                            </Grid>
+                                            <Grid>
+                                                <TextBlock Text="L" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                                <Slider x:Name="PanFader" Style="{StaticResource VolumeSlider}" Minimum="-100" Maximum="100" Value="0" Margin="12,0" ValueChanged="PanFader_ValueChanged"/>
+                                                <TextBlock Text="R" FontSize="10" Foreground="{DynamicResource MutedTextBrush}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </StackPanel>
+
+                                    </StackPanel>
+                                </Border>
+
                                 <Border Width="48" Height="48" Style="{StaticResource GlassOverlay}" MinWidth="48">
                                     <Grid>
                                         <Path x:Name="TrackIcon" Fill="{DynamicResource AccentBrush}" Stretch="Uniform" Width="22" Height="22" Data="M9,3 L19,1 L19,12 A3.5,3.5 0 1,1 15.5,15.5 L15.5,7 L9,8 L9,14 A3.5,3.5 0 1,1 5.5,17.5 L5.5,3 Z"/>
