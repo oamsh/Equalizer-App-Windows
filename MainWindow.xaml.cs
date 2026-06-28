@@ -2010,7 +2010,14 @@ namespace EqualizerPro
             }
             else
             {
-                double midDb = (_leftDbCurrent + _rightDbCurrent) / 2.0;
+                // 🔥 VOLUME INDEPENDENCE COMPRESSION 🔥
+                // By applying a non-linear power curve (0.35 exponent), quiet volumes 
+                // are scaled up dramatically so the shape is highly visible, while max volumes stay capped at 1.0.
+                double vLeft = Math.Pow(Math.Max(0, _leftDbCurrent), 0.35);
+                double vRight = Math.Pow(Math.Max(0, _rightDbCurrent), 0.35);
+                double midDb = (vLeft + vRight) / 2.0;
+
+                double time = DateTime.Now.TimeOfDay.TotalMilliseconds / 150.0;
 
                 for (int i = 0; i < pointsCount; i++)
                 {
@@ -2033,8 +2040,8 @@ namespace EqualizerPro
 
                         double noise = _rand.NextDouble() * 0.6 + 0.4;
 
-                        double lComp = lw * _leftDbCurrent;
-                        double rComp = rw * _rightDbCurrent;
+                        double lComp = lw * vLeft;
+                        double rComp = rw * vRight;
                         double mComp = mw * midDb;
 
                         targetSignal = (lComp + rComp + mComp) * noise * 95.0;
